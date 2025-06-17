@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Smartphone, AlertTriangle, ArrowLeft, ExternalLink, Chrome, Safari, Download, CheckCircle, XCircle } from 'lucide-react';
+import { Smartphone, AlertTriangle, ArrowLeft, ExternalLink, Chrome, Variable as Safari, Download, CheckCircle, XCircle } from 'lucide-react';
 import { useARStore } from '../../../store/arStore';
 
 interface WebXRCompatibilityCheckProps {
