@@ -3,9 +3,10 @@ import { Header } from '../layout/Header';
 import { GameGrid } from '../games/GameGrid';
 import { GameStatsPanel } from './GameStats';
 import { WebXRViewer } from '../ar/WebXRViewer';
+import { FallbackViewer } from '../ar/FallbackViewer';
 import { homeGames } from '../../utils/gameData';
 import { GameSession, GameStats } from '../../types';
-import { Scan, Sparkles, Zap } from 'lucide-react';
+import { Scan, Sparkles, Zap, Eye, Ruler } from 'lucide-react';
 
 interface DashboardProps {
   onLogout: () => void;
@@ -13,6 +14,7 @@ interface DashboardProps {
 
 export function Dashboard({ onLogout }: DashboardProps) {
   const [showARViewer, setShowARViewer] = useState(false);
+  const [showFallbackViewer, setShowFallbackViewer] = useState(false);
   const [gameStats] = useState<GameStats>({
     totalSessions: 24,
     averagePlayTime: 1.5,
@@ -33,6 +35,16 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
   };
 
+  const handleARLaunch = () => {
+    // Check for WebXR support before launching
+    if ('xr' in navigator) {
+      setShowARViewer(true);
+    } else {
+      // Fallback to 2D preview
+      setShowFallbackViewer(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Header onLogout={onLogout} />
@@ -41,6 +53,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
         <WebXRViewer 
           games={homeGames} 
           onExit={() => setShowARViewer(false)} 
+        />
+      ) : showFallbackViewer ? (
+        <FallbackViewer
+          games={homeGames}
+          onExit={() => setShowFallbackViewer(false)}
         />
       ) : (
         <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -68,16 +85,29 @@ export function Dashboard({ onLogout }: DashboardProps) {
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => setShowARViewer(true)}
-                  className="flex items-center px-8 py-4 bg-white text-indigo-600 rounded-2xl hover:bg-gray-50 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:scale-105 font-semibold"
-                >
-                  <Scan className="w-6 h-6 mr-3" />
-                  <div className="text-left">
-                    <div className="text-lg">Launch AR</div>
-                    <div className="text-sm opacity-75">Place games in your space</div>
-                  </div>
-                </button>
+                <div className="flex flex-col space-y-3">
+                  <button
+                    onClick={handleARLaunch}
+                    className="flex items-center px-8 py-4 bg-white text-indigo-600 rounded-2xl hover:bg-gray-50 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:scale-105 font-semibold"
+                  >
+                    <Scan className="w-6 h-6 mr-3" />
+                    <div className="text-left">
+                      <div className="text-lg">Launch AR</div>
+                      <div className="text-sm opacity-75">Place games in your space</div>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowFallbackViewer(true)}
+                    className="flex items-center px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-300 font-medium"
+                  >
+                    <Eye className="w-5 h-5 mr-2" />
+                    <div className="text-left">
+                      <div className="text-sm">2D Preview</div>
+                      <div className="text-xs opacity-75">Works on any device</div>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -106,12 +136,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
             
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
-                </svg>
+                <Ruler className="w-6 h-6 text-purple-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Real-time Interaction</h3>
-              <p className="text-gray-600">Interactive placement with real-time scaling, rotation, and positioning controls</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Universal Compatibility</h3>
+              <p className="text-gray-600">2D preview mode ensures everyone can plan their game space, regardless of device support</p>
             </div>
           </div>
           
