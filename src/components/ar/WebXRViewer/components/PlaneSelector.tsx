@@ -1,6 +1,6 @@
 import React from 'react';
 import { DetectedPlane, useARStore } from '../../../../store/arStore';
-import { Grid3X3, CheckCircle } from 'lucide-react';
+import { Grid as Grid3X3, CheckCircle } from 'lucide-react';
 
 interface PlaneSelectorProps {
   planes: DetectedPlane[];
