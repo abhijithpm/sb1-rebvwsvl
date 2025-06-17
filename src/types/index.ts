@@ -34,3 +34,9 @@ export interface GameStats {
   lastPlayed?: Date;
   favoriteGame?: string;
 }
+
+export interface GameDimensions {
+  width: number;   // in meters
+  height: number;  // in meters
+  depth: number;   // in meters
+}
