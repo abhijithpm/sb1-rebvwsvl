@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '../layout/Header';
 import { GameGrid } from '../games/GameGrid';
 import { GameStatsPanel } from './GameStats';
@@ -6,7 +7,7 @@ import { WebXRViewer } from '../ar/WebXRViewer';
 import { FallbackViewer } from '../ar/FallbackViewer';
 import { homeGames } from '../../utils/gameData';
 import { GameSession, GameStats } from '../../types';
-import { Scan, Sparkles, Zap, Eye, Ruler } from 'lucide-react';
+import { Scan, Sparkles, Zap, Eye, Ruler, Skull } from 'lucide-react';
 
 interface DashboardProps {
   onLogout: () => void;
@@ -15,6 +16,7 @@ interface DashboardProps {
 export function Dashboard({ onLogout }: DashboardProps) {
   const [showARViewer, setShowARViewer] = useState(false);
   const [showFallbackViewer, setShowFallbackViewer] = useState(false);
+  const navigate = useNavigate();
   const [gameStats] = useState<GameStats>({
     totalSessions: 24,
     averagePlayTime: 1.5,
@@ -36,11 +38,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
   };
 
   const handleARLaunch = () => {
-    // Check for WebXR support before launching
     if ('xr' in navigator) {
       setShowARViewer(true);
     } else {
-      // Fallback to 2D preview
       setShowFallbackViewer(true);
     }
   };
@@ -61,7 +61,51 @@ export function Dashboard({ onLogout }: DashboardProps) {
         />
       ) : (
         <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          {/* Hero Section */}
+          {/* Mafia Game Banner */}
+          <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-8 mb-8 text-white relative overflow-hidden shadow-2xl">
+            <div className="absolute inset-0 bg-black/20"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/20 rounded-full -translate-y-16 translate-x-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-red-400/20 rounded-full translate-y-12 -translate-x-12"></div>
+            
+            <div className="relative z-10 flex items-center justify-between">
+              <div className="flex items-center space-x-6">
+                <div className="relative">
+                  <Skull className="w-16 h-16 text-red-200 animate-pulse" />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
+                    <span className="text-xs font-bold text-red-800">!</span>
+                  </div>
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold mb-2">ILLAM MAFIA</h2>
+                  <p className="text-red-100 text-lg">
+                    Enter the shadows of deception. Trust no one. Survive the night.
+                  </p>
+                  <div className="flex items-center space-x-4 mt-3 text-sm">
+                    <div className="flex items-center bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+                      <Skull className="w-4 h-4 mr-2" />
+                      Multiplayer
+                    </div>
+                    <div className="flex items-center bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Real-time
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => navigate('/mafia-home')}
+                className="group relative px-8 py-4 bg-white text-red-600 rounded-2xl hover:bg-gray-50 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:scale-105 font-bold text-lg"
+              >
+                <span className="flex items-center">
+                  <Skull className="w-6 h-6 mr-3 group-hover:animate-bounce" />
+                  PLAY MAFIA
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* AR Game Center Hero Section */}
           <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 mb-8 text-white relative overflow-hidden">
             <div className="absolute inset-0 bg-black/10"></div>
             <div className="relative z-10">
