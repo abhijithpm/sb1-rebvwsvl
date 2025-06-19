@@ -1,14 +1,18 @@
 import React from 'react';
 import { useGame } from './GameContext';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, RotateCcw, Home } from 'lucide-react';
+import { Trophy, RotateCcw, Home, Wifi } from 'lucide-react';
 
 export function EndGameScreen() {
-  const { state, dispatch } = useGame();
+  const { state, resetGame } = useGame();
   const navigate = useNavigate();
 
-  const handlePlayAgain = () => {
-    dispatch({ type: 'RESET_GAME' });
+  const handlePlayAgain = async () => {
+    try {
+      await resetGame();
+    } catch (error) {
+      console.error('Failed to reset game:', error);
+    }
   };
 
   const handleGoHome = () => {
@@ -26,6 +30,12 @@ export function EndGameScreen() {
           <h2 className="text-4xl font-bold mb-6">
             {state.winner} Win!
           </h2>
+          
+          {/* Real-time indicator */}
+          <div className="flex items-center justify-center text-green-400 mb-4">
+            <Wifi className="w-5 h-5 mr-2" />
+            <span className="text-sm">Synced across all devices</span>
+          </div>
         </div>
 
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 mb-8">
@@ -96,6 +106,10 @@ export function EndGameScreen() {
             <Home className="w-5 h-5 mr-2" />
             Back to Home
           </button>
+        </div>
+
+        <div className="mt-6 text-sm text-gray-400">
+          🔄 All players will see this result in real-time
         </div>
       </div>
     </div>

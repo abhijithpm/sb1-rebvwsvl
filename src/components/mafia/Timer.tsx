@@ -3,21 +3,23 @@ import { useGame } from './GameContext';
 import { Clock, Play, Pause, RotateCcw } from 'lucide-react';
 
 export function Timer() {
-  const { state, dispatch } = useGame();
+  const { state, updateTimer } = useGame();
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
     if (state.isTimerRunning && state.timer > 0) {
-      interval = setInterval(() => {
-        dispatch({ type: 'TICK_TIMER' });
+      interval = setInterval(async () => {
+        const newTimer = Math.max(0, state.timer - 1);
+        const isRunning = newTimer > 0;
+        await updateTimer(newTimer, isRunning);
       }, 1000);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [state.isTimerRunning, state.timer, dispatch]);
+  }, [state.isTimerRunning, state.timer, updateTimer]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -25,12 +27,12 @@ export function Timer() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleStartTimer = (duration: number) => {
-    dispatch({ type: 'START_TIMER', payload: { duration } });
+  const handleStartTimer = async (duration: number) => {
+    await updateTimer(duration, true);
   };
 
-  const handleStopTimer = () => {
-    dispatch({ type: 'STOP_TIMER' });
+  const handleStopTimer = async () => {
+    await updateTimer(state.timer, false);
   };
 
   const isHost = state.currentPlayer?.isHost;
@@ -100,6 +102,13 @@ export function Timer() {
               <RotateCcw className="w-4 h-4 mr-2" />
               Reset
             </button>
+          </div>
+        )}
+
+        {/* Real-time sync indicator */}
+        {state.isConnected && (
+          <div className="mt-4 text-xs text-gray-400">
+            🔄 Synced across all devices
           </div>
         )}
       </div>

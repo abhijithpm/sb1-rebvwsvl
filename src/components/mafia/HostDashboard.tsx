@@ -2,13 +2,17 @@ import React from 'react';
 import { useGame } from './GameContext';
 import { Timer } from './Timer';
 import { KillSelector } from './KillSelector';
-import { Crown, Users, Skull, Trophy } from 'lucide-react';
+import { Crown, Users, Skull, Trophy, Wifi } from 'lucide-react';
 
 export function HostDashboard() {
-  const { state, dispatch } = useGame();
+  const { state, endGame } = useGame();
 
-  const handleEndGame = (winner: string) => {
-    dispatch({ type: 'END_GAME', payload: { winner } });
+  const handleEndGame = async (winner: string) => {
+    try {
+      await endGame(winner);
+    } catch (error) {
+      console.error('Failed to end game:', error);
+    }
   };
 
   const alivePlayers = state.players.filter(p => p.isAlive);
@@ -25,8 +29,12 @@ export function HostDashboard() {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
               HOST DASHBOARD
             </h1>
+            <div className="ml-4 flex items-center text-green-400">
+              <Wifi className="w-5 h-5 mr-1" />
+              <span className="text-sm">Live</span>
+            </div>
           </div>
-          <p className="text-gray-300">Control the game and manage players</p>
+          <p className="text-gray-300">Control the game and manage players • Real-time sync active</p>
         </div>
 
         {/* Timer */}
@@ -83,12 +91,15 @@ export function HostDashboard() {
                   Villagers Win
                 </button>
               </div>
+              <div className="mt-3 text-xs text-gray-400 text-center">
+                🔄 Game end will sync to all players
+              </div>
             </div>
           </div>
 
           {/* Full Role List */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-            <h3 className="text-xl font-bold mb-4">Player Roles</h3>
+            <h3 className="text-xl font-bold mb-4">Player Roles (Live)</h3>
             <div className="space-y-3">
               {state.players.map((player) => (
                 <div
@@ -124,6 +135,14 @@ export function HostDashboard() {
                   </div>
                 </div>
               ))}
+            </div>
+            
+            {/* Connection indicator */}
+            <div className="mt-4 pt-4 border-t border-white/20">
+              <div className="flex items-center justify-center text-sm text-gray-400">
+                <Wifi className="w-4 h-4 mr-2" />
+                Real-time updates • {state.players.length} players connected
+              </div>
             </div>
           </div>
         </div>

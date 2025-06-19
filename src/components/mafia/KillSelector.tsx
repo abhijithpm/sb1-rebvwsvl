@@ -3,17 +3,25 @@ import { useGame } from './GameContext';
 import { Skull, AlertTriangle } from 'lucide-react';
 
 export function KillSelector() {
-  const { state, dispatch } = useGame();
+  const { state, eliminatePlayer } = useGame();
   const [selectedPlayer, setSelectedPlayer] = useState<string>('');
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isEliminating, setIsEliminating] = useState(false);
 
   const alivePlayers = state.players.filter(p => p.isAlive && !p.isHost);
 
-  const handleEliminate = () => {
+  const handleEliminate = async () => {
     if (selectedPlayer) {
-      dispatch({ type: 'ELIMINATE_PLAYER', payload: { playerId: selectedPlayer } });
-      setSelectedPlayer('');
-      setShowConfirm(false);
+      setIsEliminating(true);
+      try {
+        await eliminatePlayer(selectedPlayer);
+        setSelectedPlayer('');
+        setShowConfirm(false);
+      } catch (error) {
+        console.error('Failed to eliminate player:', error);
+      } finally {
+        setIsEliminating(false);
+      }
     }
   };
 
@@ -31,7 +39,8 @@ export function KillSelector() {
           <select
             value={selectedPlayer}
             onChange={(e) => setSelectedPlayer(e.target.value)}
-            className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+            disabled={isEliminating}
+            className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
           >
             <option value="">Select player to eliminate...</option>
             {alivePlayers.map((player) => (
@@ -44,7 +53,8 @@ export function KillSelector() {
           {selectedPlayer && !showConfirm && (
             <button
               onClick={() => setShowConfirm(true)}
-              className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors"
+              disabled={isEliminating}
+              className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors disabled:opacity-50"
             >
               Eliminate Selected Player
             </button>
@@ -61,22 +71,31 @@ export function KillSelector() {
                 <strong>
                   {alivePlayers.find(p => p.id === selectedPlayer)?.name}
                 </strong>
-                ?
+                ? This action will be synced to all players immediately.
               </p>
               <div className="flex space-x-3">
                 <button
                   onClick={() => setShowConfirm(false)}
-                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg font-medium transition-colors"
+                  disabled={isEliminating}
+                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleEliminate}
-                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors"
+                  disabled={isEliminating}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors disabled:opacity-50"
                 >
-                  Confirm
+                  {isEliminating ? 'Eliminating...' : 'Confirm'}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Real-time sync indicator */}
+          {state.isConnected && (
+            <div className="text-xs text-gray-400 text-center">
+              🔄 Changes sync instantly to all players
             </div>
           )}
         </div>

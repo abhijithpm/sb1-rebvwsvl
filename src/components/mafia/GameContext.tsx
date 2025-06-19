@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { gameService, FirebaseGameState, FirebasePlayer } from '../../firebase/gameService';
 
 export interface Player {
   id: string;
@@ -13,152 +14,243 @@ export interface GameState {
   players: Player[];
   host: Player | null;
   currentPlayer: Player | null;
+  currentPlayerId: string | null;
   timer: number;
   isTimerRunning: boolean;
   eliminatedPlayers: Player[];
   gameStarted: boolean;
   winner: string | null;
+  isConnected: boolean;
+  error: string | null;
 }
 
 type GameAction =
-  | { type: 'JOIN_AS_HOST'; payload: { name: string } }
-  | { type: 'JOIN_AS_PLAYER'; payload: { name: string } }
-  | { type: 'START_GAME' }
-  | { type: 'ASSIGN_ROLES' }
-  | { type: 'ELIMINATE_PLAYER'; payload: { playerId: string } }
-  | { type: 'START_TIMER'; payload: { duration: number } }
-  | { type: 'STOP_TIMER' }
-  | { type: 'TICK_TIMER' }
-  | { type: 'END_GAME'; payload: { winner: string } }
-  | { type: 'RESET_GAME' }
-  | { type: 'LEAVE_GAME' };
-
-const roles = ['Mafia', 'Detective', 'Doctor', 'Villager'];
+  | { type: 'SET_CURRENT_PLAYER_ID'; payload: { playerId: string } }
+  | { type: 'UPDATE_GAME_STATE'; payload: { gameState: FirebaseGameState } }
+  | { type: 'SET_CONNECTION_STATUS'; payload: { connected: boolean } }
+  | { type: 'SET_ERROR'; payload: { error: string | null } }
+  | { type: 'RESET_LOCAL_STATE' };
 
 const initialState: GameState = {
   gamePhase: 'lobby',
   players: [],
   host: null,
   currentPlayer: null,
+  currentPlayerId: null,
   timer: 0,
   isTimerRunning: false,
   eliminatedPlayers: [],
   gameStarted: false,
   winner: null,
+  isConnected: false,
+  error: null,
 };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
-    case 'JOIN_AS_HOST':
-      if (state.host) return state; // Host already exists
-      const hostPlayer: Player = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: action.payload.name,
-        isAlive: true,
-        isHost: true,
-      };
+    case 'SET_CURRENT_PLAYER_ID':
+      const currentPlayer = state.players.find(p => p.id === action.payload.playerId) || null;
       return {
         ...state,
-        host: hostPlayer,
-        currentPlayer: hostPlayer,
-        players: [hostPlayer],
+        currentPlayerId: action.payload.playerId,
+        currentPlayer,
       };
 
-    case 'JOIN_AS_PLAYER':
-      const newPlayer: Player = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: action.payload.name,
-        isAlive: true,
-        isHost: false,
-      };
+    case 'UPDATE_GAME_STATE':
+      const { gameState } = action.payload;
+      if (!gameState) return { ...state, isConnected: false };
+
+      const players = Object.values(gameState.players || {});
+      const host = players.find(p => p.isHost) || null;
+      const eliminatedPlayers = Object.values(gameState.eliminatedPlayers || {});
+      const currentPlayer = state.currentPlayerId 
+        ? players.find(p => p.id === state.currentPlayerId) || null
+        : null;
+
       return {
         ...state,
-        players: [...state.players, newPlayer],
-        currentPlayer: state.currentPlayer || newPlayer,
+        gamePhase: gameState.gamePhase,
+        players,
+        host,
+        currentPlayer,
+        timer: gameState.timer,
+        isTimerRunning: gameState.isTimerRunning,
+        eliminatedPlayers,
+        gameStarted: gameState.gameStarted,
+        winner: gameState.winner,
+        isConnected: true,
+        error: null,
       };
 
-    case 'START_GAME':
-      if (state.players.length < 3) return state; // Need at least 3 players
+    case 'SET_CONNECTION_STATUS':
       return {
         ...state,
-        gamePhase: 'playing',
-        gameStarted: true,
+        isConnected: action.payload.connected,
       };
 
-    case 'ASSIGN_ROLES':
-      const shuffledRoles = [...roles].sort(() => Math.random() - 0.5);
-      const playersWithRoles = state.players.map((player, index) => ({
-        ...player,
-        role: shuffledRoles[index % roles.length],
-      }));
+    case 'SET_ERROR':
       return {
         ...state,
-        players: playersWithRoles,
+        error: action.payload.error,
       };
 
-    case 'ELIMINATE_PLAYER':
-      const eliminatedPlayer = state.players.find(p => p.id === action.payload.playerId);
-      if (!eliminatedPlayer) return state;
-      
-      const updatedPlayers = state.players.map(p =>
-        p.id === action.payload.playerId ? { ...p, isAlive: false } : p
-      );
-      
+    case 'RESET_LOCAL_STATE':
       return {
-        ...state,
-        players: updatedPlayers,
-        eliminatedPlayers: [...state.eliminatedPlayers, { ...eliminatedPlayer, isAlive: false }],
+        ...initialState,
+        currentPlayerId: state.currentPlayerId,
       };
-
-    case 'START_TIMER':
-      return {
-        ...state,
-        timer: action.payload.duration,
-        isTimerRunning: true,
-      };
-
-    case 'STOP_TIMER':
-      return {
-        ...state,
-        isTimerRunning: false,
-      };
-
-    case 'TICK_TIMER':
-      return {
-        ...state,
-        timer: Math.max(0, state.timer - 1),
-        isTimerRunning: state.timer > 1,
-      };
-
-    case 'END_GAME':
-      return {
-        ...state,
-        gamePhase: 'ended',
-        winner: action.payload.winner,
-        isTimerRunning: false,
-      };
-
-    case 'RESET_GAME':
-      return initialState;
-
-    case 'LEAVE_GAME':
-      return initialState;
 
     default:
       return state;
   }
 }
 
-const GameContext = createContext<{
+interface GameContextType {
   state: GameState;
   dispatch: React.Dispatch<GameAction>;
-} | null>(null);
+  // Firebase actions
+  joinAsHost: (name: string) => Promise<void>;
+  joinAsPlayer: (name: string) => Promise<void>;
+  startGame: () => Promise<void>;
+  eliminatePlayer: (playerId: string) => Promise<void>;
+  updateTimer: (timer: number, isRunning: boolean) => Promise<void>;
+  endGame: (winner: string) => Promise<void>;
+  resetGame: () => Promise<void>;
+  leaveGame: () => Promise<void>;
+}
+
+const GameContext = createContext<GameContextType | null>(null);
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, initialState);
 
+  // Initialize Firebase connection
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+
+    const initializeGame = async () => {
+      try {
+        await gameService.initializeRoom();
+        
+        // Listen to game state changes
+        unsubscribe = gameService.onGameStateChange((gameState) => {
+          if (gameState) {
+            dispatch({ type: 'UPDATE_GAME_STATE', payload: { gameState } });
+          } else {
+            dispatch({ type: 'SET_CONNECTION_STATUS', payload: { connected: false } });
+          }
+        });
+
+        dispatch({ type: 'SET_CONNECTION_STATUS', payload: { connected: true } });
+      } catch (error) {
+        console.error('Failed to initialize game:', error);
+        dispatch({ type: 'SET_ERROR', payload: { error: 'Failed to connect to game server' } });
+      }
+    };
+
+    initializeGame();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, []);
+
+  // Firebase action handlers
+  const joinAsHost = async (name: string) => {
+    try {
+      const playerId = await gameService.joinAsHost(name);
+      if (playerId) {
+        dispatch({ type: 'SET_CURRENT_PLAYER_ID', payload: { playerId } });
+      }
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: { error: (error as Error).message } });
+      throw error;
+    }
+  };
+
+  const joinAsPlayer = async (name: string) => {
+    try {
+      const playerId = await gameService.joinAsPlayer(name);
+      dispatch({ type: 'SET_CURRENT_PLAYER_ID', payload: { playerId } });
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: { error: (error as Error).message } });
+      throw error;
+    }
+  };
+
+  const startGame = async () => {
+    try {
+      await gameService.startGame();
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: { error: (error as Error).message } });
+      throw error;
+    }
+  };
+
+  const eliminatePlayer = async (playerId: string) => {
+    try {
+      await gameService.eliminatePlayer(playerId);
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: { error: (error as Error).message } });
+      throw error;
+    }
+  };
+
+  const updateTimer = async (timer: number, isRunning: boolean) => {
+    try {
+      await gameService.updateTimer(timer, isRunning);
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: { error: (error as Error).message } });
+      throw error;
+    }
+  };
+
+  const endGame = async (winner: string) => {
+    try {
+      await gameService.endGame(winner);
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: { error: (error as Error).message } });
+      throw error;
+    }
+  };
+
+  const resetGame = async () => {
+    try {
+      await gameService.resetGame();
+      dispatch({ type: 'RESET_LOCAL_STATE' });
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: { error: (error as Error).message } });
+      throw error;
+    }
+  };
+
+  const leaveGame = async () => {
+    try {
+      if (state.currentPlayerId) {
+        await gameService.leaveGame(state.currentPlayerId);
+      }
+      dispatch({ type: 'RESET_LOCAL_STATE' });
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: { error: (error as Error).message } });
+      throw error;
+    }
+  };
+
   return (
-    <GameContext.Provider value={{ state, dispatch }}>
+    <GameContext.Provider value={{
+      state,
+      dispatch,
+      joinAsHost,
+      joinAsPlayer,
+      startGame,
+      eliminatePlayer,
+      updateTimer,
+      endGame,
+      resetGame,
+      leaveGame,
+    }}>
       {children}
     </GameContext.Provider>
   );
