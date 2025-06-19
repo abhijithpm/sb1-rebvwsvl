@@ -13,7 +13,7 @@ export interface GameState {
   gamePhase: 'lobby' | 'playing' | 'ended';
   players: Player[];
   host: Player | null;
-  currentPlayer: Player | null;
+  currentPlayerData: Player | null;
   currentPlayerId: string | null;
   timer: number;
   isTimerRunning: boolean;
@@ -35,7 +35,7 @@ const initialState: GameState = {
   gamePhase: 'lobby',
   players: [],
   host: null,
-  currentPlayer: null,
+  currentPlayerData: null,
   currentPlayerId: null,
   timer: 0,
   isTimerRunning: false,
@@ -49,11 +49,11 @@ const initialState: GameState = {
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'SET_CURRENT_PLAYER_ID':
-      const currentPlayer = state.players.find(p => p.id === action.payload.playerId) || null;
+      const currentPlayerData = state.players.find(p => p.id === action.payload.playerId) || null;
       return {
         ...state,
         currentPlayerId: action.payload.playerId,
-        currentPlayer,
+        currentPlayerData,
       };
 
     case 'UPDATE_GAME_STATE':
@@ -63,7 +63,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const players = Object.values(gameState.players || {});
       const host = players.find(p => p.isHost) || null;
       const eliminatedPlayers = Object.values(gameState.eliminatedPlayers || {});
-      const currentPlayer = state.currentPlayerId 
+      const currentPlayerData = state.currentPlayerId 
         ? players.find(p => p.id === state.currentPlayerId) || null
         : null;
 
@@ -72,7 +72,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         gamePhase: gameState.gamePhase,
         players,
         host,
-        currentPlayer,
+        currentPlayerData,
         timer: gameState.timer,
         isTimerRunning: gameState.isTimerRunning,
         eliminatedPlayers,
