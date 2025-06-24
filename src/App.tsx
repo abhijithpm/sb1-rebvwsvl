@@ -6,7 +6,7 @@ import { MafiaGame } from './components/mafia/MafiaGame';
 import { GameProvider } from './components/mafia/GameContext';
 
 import { ref, set, get, child } from 'firebase/database';
-import { database } from './config'; // make sure this is the correct path to your firebase config
+import { database } from './firebase/database'; // make sure this is the correct path to your firebase config
 
 function App() {
   const handleLogout = () => {
