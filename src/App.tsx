@@ -1,14 +1,38 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { MafiaHomePage } from './components/mafia/HomePage';
 import { MafiaGame } from './components/mafia/MafiaGame';
 import { GameProvider } from './components/mafia/GameContext';
 
+import { ref, set, get, child } from 'firebase/database';
+import { database } from './config'; // make sure this is the correct path to your firebase config
+
 function App() {
   const handleLogout = () => {
     console.log('Logout clicked');
   };
+
+  useEffect(() => {
+    const testFirebaseConnection = async () => {
+      try {
+        const testRef = ref(database, 'connectionTest');
+        await set(testRef, { status: 'connected', timestamp: Date.now() });
+        console.log('✅ Firebase write succeeded');
+
+        const snapshot = await get(child(ref(database), 'connectionTest'));
+        if (snapshot.exists()) {
+          console.log('✅ Firebase read succeeded:', snapshot.val());
+        } else {
+          console.log('⚠️ Firebase read: No data found');
+        }
+      } catch (error) {
+        console.error('❌ Firebase connection failed:', error.message);
+      }
+    };
+
+    testFirebaseConnection();
+  }, []); // Runs once on component mount
 
   return (
     <Router>
