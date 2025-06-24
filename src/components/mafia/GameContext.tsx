@@ -63,7 +63,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const players = Object.values(gameState.players || {});
       const host = players.find(p => p.isHost) || null;
       const eliminatedPlayers = Object.values(gameState.eliminatedPlayers || {});
-      const currentPlayerData = state.currentPlayerId 
+      const updatedCurrentPlayerData = state.currentPlayerId 
         ? players.find(p => p.id === state.currentPlayerId) || null
         : null;
 
@@ -72,7 +72,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         gamePhase: gameState.gamePhase,
         players,
         host,
-        currentPlayerData,
+        currentPlayerData: updatedCurrentPlayerData,
         timer: gameState.timer,
         isTimerRunning: gameState.isTimerRunning,
         eliminatedPlayers,
