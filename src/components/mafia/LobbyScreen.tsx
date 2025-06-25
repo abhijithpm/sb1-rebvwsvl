@@ -4,6 +4,7 @@ import { Users, Crown, Play, ArrowLeft, Wifi, WifiOff, AlertCircle } from 'lucid
 import { useNavigate } from 'react-router-dom';
 import { PlayerList } from './PlayerList';
 import { InstructionsCard } from './InstructionsCard';
+import { HostRequestPanel } from './HostRequestPanel';
 
 export function LobbyScreen() {
   const { state, joinAsHost, joinAsPlayer, startGame, leaveGame } = useGame();
@@ -67,7 +68,7 @@ export function LobbyScreen() {
     }
   };
 
-  const isCurrentPlayerHost = state.currentPlayer?.isHost;
+  const isCurrentPlayerHost = state.currentPlayerData?.isHost;
   const canStartGame = isCurrentPlayerHost && state.players.length >= 3;
 
   return (
@@ -157,7 +158,7 @@ export function LobbyScreen() {
             )}
 
             {/* Join Options */}
-            {!state.currentPlayer && state.isConnected && (
+            {!state.currentPlayerData && state.isConnected && (
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
                 <h2 className="text-2xl font-bold mb-6 text-center">Join the Game</h2>
                 
@@ -197,8 +198,13 @@ export function LobbyScreen() {
               </div>
             )}
 
+            {/* Host Request Panel */}
+            {state.currentPlayerData && (
+              <HostRequestPanel />
+            )}
+
             {/* Game Controls */}
-            {state.currentPlayer && (
+            {state.currentPlayerData && (
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold">Game Lobby</h2>
@@ -221,7 +227,7 @@ export function LobbyScreen() {
                 <div className="bg-green-600/20 border border-green-500/30 rounded-lg p-4 mb-6">
                   <p className="text-green-300">
                     ✅ You joined as: <span className="font-bold text-white">
-                      {state.currentPlayer.name} {state.currentPlayer.isHost ? '(Host)' : '(Player)'}
+                      {state.currentPlayerData.name} {state.currentPlayerData.isHost ? '(Host)' : '(Player)'}
                     </span>
                   </p>
                 </div>

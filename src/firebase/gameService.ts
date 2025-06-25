@@ -23,6 +23,15 @@ export interface FirebasePlayer {
   isOnline: boolean;
 }
 
+export interface HostRequest {
+  id: string;
+  playerId: string;
+  playerName: string;
+  requestedAt: number;
+  status: 'pending' | 'approved' | 'rejected';
+  expiresAt: number;
+}
+
 export interface FirebaseGameState {
   host: string | null;
   players: { [key: string]: FirebasePlayer };
@@ -34,14 +43,17 @@ export interface FirebaseGameState {
   winner: string | null;
   lastUpdated: number;
   roomCreated: number;
+  hostRequests: { [key: string]: HostRequest };
 }
 
 const ROOM_ID = 'illam-gang';
 const ROOM_REF = ref(database, `rooms/${ROOM_ID}`);
+const HOST_REQUEST_TIMEOUT = 30000; // 30 seconds
 
 export class GameService {
   private listeners: { [key: string]: (data: any) => void } = {};
   private currentPlayerId: string | null = null;
+  private hostRequestTimeouts: { [key: string]: NodeJS.Timeout } = {};
 
   // Initialize room if it doesn't exist
   async initializeRoom(): Promise<void> {
@@ -58,12 +70,15 @@ export class GameService {
           eliminatedPlayers: {},
           winner: null,
           lastUpdated: Date.now(),
-          roomCreated: Date.now()
+          roomCreated: Date.now(),
+          hostRequests: {}
         };
         await set(ROOM_REF, initialState);
         console.log('✅ Room initialized successfully');
       } else {
         console.log('✅ Room already exists');
+        // Clean up expired host requests on initialization
+        await this.cleanupExpiredHostRequests();
       }
     } catch (error) {
       console.error('❌ Failed to initialize room:', error);
@@ -94,6 +109,210 @@ export class GameService {
       console.log(`✅ Presence setup for player ${playerId}`);
     } catch (error) {
       console.error('❌ Failed to setup presence:', error);
+    }
+  }
+
+  // Clean up expired host requests
+  private async cleanupExpiredHostRequests(): Promise<void> {
+    try {
+      const snapshot = await get(ref(database, `rooms/${ROOM_ID}/hostRequests`));
+      if (!snapshot.exists()) return;
+
+      const hostRequests = snapshot.val() as { [key: string]: HostRequest };
+      const now = Date.now();
+      const updates: any = {};
+
+      Object.entries(hostRequests).forEach(([requestId, request]) => {
+        if (request.status === 'pending' && now > request.expiresAt) {
+          updates[`hostRequests/${requestId}`] = null;
+        }
+      });
+
+      if (Object.keys(updates).length > 0) {
+        await update(ROOM_REF, updates);
+        console.log('✅ Cleaned up expired host requests');
+      }
+    } catch (error) {
+      console.error('❌ Failed to cleanup expired host requests:', error);
+    }
+  }
+
+  // Request to become host
+  async requestHost(playerId: string, playerName: string): Promise<string> {
+    try {
+      const snapshot = await get(ROOM_REF);
+      const gameState = snapshot.val() as FirebaseGameState;
+      
+      if (gameState?.host) {
+        // Check if there's already a pending request from this player
+        const existingRequest = Object.values(gameState.hostRequests || {})
+          .find(req => req.playerId === playerId && req.status === 'pending');
+        
+        if (existingRequest) {
+          throw new Error('You already have a pending host request');
+        }
+
+        const requestId = push(ref(database, 'temp')).key!;
+        const expiresAt = Date.now() + HOST_REQUEST_TIMEOUT;
+        
+        const hostRequest: HostRequest = {
+          id: requestId,
+          playerId,
+          playerName,
+          requestedAt: Date.now(),
+          status: 'pending',
+          expiresAt
+        };
+
+        await update(ROOM_REF, {
+          [`hostRequests/${requestId}`]: hostRequest,
+          lastUpdated: Date.now()
+        });
+
+        // Set up auto-promotion timeout
+        this.hostRequestTimeouts[requestId] = setTimeout(async () => {
+          await this.autoPromoteToHost(requestId, playerId);
+        }, HOST_REQUEST_TIMEOUT);
+
+        console.log(`✅ Host request created: ${playerName} (${requestId})`);
+        return requestId;
+      } else {
+        // No host exists, promote immediately
+        await this.promoteToHost(playerId);
+        return 'immediate';
+      }
+    } catch (error) {
+      console.error('❌ Failed to request host:', error);
+      throw error;
+    }
+  }
+
+  // Respond to host request (approve/reject)
+  async respondToHostRequest(requestId: string, approved: boolean, currentHostId: string): Promise<void> {
+    try {
+      const snapshot = await get(ref(database, `rooms/${ROOM_ID}/hostRequests/${requestId}`));
+      if (!snapshot.exists()) {
+        throw new Error('Host request not found');
+      }
+
+      const request = snapshot.val() as HostRequest;
+      
+      // Verify the current user is the host
+      const gameSnapshot = await get(ROOM_REF);
+      const gameState = gameSnapshot.val() as FirebaseGameState;
+      
+      if (gameState?.host !== currentHostId) {
+        throw new Error('Only the current host can respond to host requests');
+      }
+
+      if (approved) {
+        // Transfer host role
+        await this.transferHost(currentHostId, request.playerId);
+      }
+
+      // Update request status and remove it
+      await update(ROOM_REF, {
+        [`hostRequests/${requestId}`]: null,
+        lastUpdated: Date.now()
+      });
+
+      // Clear timeout
+      if (this.hostRequestTimeouts[requestId]) {
+        clearTimeout(this.hostRequestTimeouts[requestId]);
+        delete this.hostRequestTimeouts[requestId];
+      }
+
+      console.log(`✅ Host request ${approved ? 'approved' : 'rejected'}: ${request.playerName}`);
+    } catch (error) {
+      console.error('❌ Failed to respond to host request:', error);
+      throw error;
+    }
+  }
+
+  // Auto-promote to host if request times out
+  private async autoPromoteToHost(requestId: string, playerId: string): Promise<void> {
+    try {
+      const snapshot = await get(ref(database, `rooms/${ROOM_ID}/hostRequests/${requestId}`));
+      if (!snapshot.exists()) return;
+
+      const request = snapshot.val() as HostRequest;
+      if (request.status !== 'pending') return;
+
+      // Check if the requesting player is still online
+      const playerSnapshot = await get(ref(database, `rooms/${ROOM_ID}/players/${playerId}`));
+      if (!playerSnapshot.exists()) {
+        // Player left, remove the request
+        await update(ROOM_REF, {
+          [`hostRequests/${requestId}`]: null
+        });
+        return;
+      }
+
+      const player = playerSnapshot.val() as FirebasePlayer;
+      if (!player.isOnline) {
+        // Player is offline, remove the request
+        await update(ROOM_REF, {
+          [`hostRequests/${requestId}`]: null
+        });
+        return;
+      }
+
+      // Get current host
+      const gameSnapshot = await get(ROOM_REF);
+      const gameState = gameSnapshot.val() as FirebaseGameState;
+      
+      if (gameState?.host) {
+        // Transfer host role due to timeout
+        await this.transferHost(gameState.host, playerId);
+      } else {
+        // No host exists, promote directly
+        await this.promoteToHost(playerId);
+      }
+
+      // Remove the request
+      await update(ROOM_REF, {
+        [`hostRequests/${requestId}`]: null,
+        lastUpdated: Date.now()
+      });
+
+      console.log(`✅ Auto-promoted to host due to timeout: ${request.playerName}`);
+    } catch (error) {
+      console.error('❌ Failed to auto-promote to host:', error);
+    }
+  }
+
+  // Transfer host role from one player to another
+  private async transferHost(fromPlayerId: string, toPlayerId: string): Promise<void> {
+    try {
+      const updates: any = {
+        host: toPlayerId,
+        [`players/${fromPlayerId}/isHost`]: false,
+        [`players/${toPlayerId}/isHost`]: true,
+        lastUpdated: Date.now()
+      };
+
+      await update(ROOM_REF, updates);
+      console.log(`✅ Host transferred from ${fromPlayerId} to ${toPlayerId}`);
+    } catch (error) {
+      console.error('❌ Failed to transfer host:', error);
+      throw error;
+    }
+  }
+
+  // Promote player to host
+  private async promoteToHost(playerId: string): Promise<void> {
+    try {
+      const updates: any = {
+        host: playerId,
+        [`players/${playerId}/isHost`]: true,
+        lastUpdated: Date.now()
+      };
+
+      await update(ROOM_REF, updates);
+      console.log(`✅ Player promoted to host: ${playerId}`);
+    } catch (error) {
+      console.error('❌ Failed to promote to host:', error);
+      throw error;
     }
   }
 
@@ -182,8 +401,13 @@ export class GameService {
       const updates: any = {
         gameStarted: true,
         gamePhase: 'playing',
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
+        hostRequests: {} // Clear all host requests when game starts
       };
+
+      // Clear all host request timeouts
+      Object.values(this.hostRequestTimeouts).forEach(timeout => clearTimeout(timeout));
+      this.hostRequestTimeouts = {};
 
       // Assign roles to players
       players.forEach((player, index) => {
@@ -254,6 +478,10 @@ export class GameService {
   // Reset game
   async resetGame(): Promise<void> {
     try {
+      // Clear all host request timeouts
+      Object.values(this.hostRequestTimeouts).forEach(timeout => clearTimeout(timeout));
+      this.hostRequestTimeouts = {};
+
       const initialState: FirebaseGameState = {
         host: null,
         players: {},
@@ -264,7 +492,8 @@ export class GameService {
         eliminatedPlayers: {},
         winner: null,
         lastUpdated: Date.now(),
-        roomCreated: Date.now()
+        roomCreated: Date.now(),
+        hostRequests: {}
       };
       await set(ROOM_REF, initialState);
       this.currentPlayerId = null;
@@ -286,11 +515,27 @@ export class GameService {
         await this.resetGame();
         console.log('✅ Host left - game reset');
       } else {
-        // Remove player
-        await remove(ref(database, `rooms/${ROOM_ID}/players/${playerId}`));
-        await update(ROOM_REF, {
+        // Remove player and any pending host requests from them
+        const updates: any = {
+          [`players/${playerId}`]: null,
           lastUpdated: Date.now()
-        });
+        };
+
+        // Remove any host requests from this player
+        if (gameState?.hostRequests) {
+          Object.entries(gameState.hostRequests).forEach(([requestId, request]) => {
+            if (request.playerId === playerId) {
+              updates[`hostRequests/${requestId}`] = null;
+              // Clear timeout
+              if (this.hostRequestTimeouts[requestId]) {
+                clearTimeout(this.hostRequestTimeouts[requestId]);
+                delete this.hostRequestTimeouts[requestId];
+              }
+            }
+          });
+        }
+
+        await update(ROOM_REF, updates);
         console.log(`✅ Player ${playerId} left the game`);
       }
       
@@ -311,8 +556,23 @@ export class GameService {
         console.log('🔄 Game state updated:', {
           players: Object.keys(data.players || {}).length,
           phase: data.gamePhase,
-          host: data.host ? 'present' : 'none'
+          host: data.host ? 'present' : 'none',
+          hostRequests: Object.keys(data.hostRequests || {}).length
         });
+
+        // Set up timeouts for any pending host requests
+        if (data.hostRequests) {
+          Object.entries(data.hostRequests).forEach(([requestId, request]: [string, any]) => {
+            if (request.status === 'pending' && !this.hostRequestTimeouts[requestId]) {
+              const timeLeft = request.expiresAt - Date.now();
+              if (timeLeft > 0) {
+                this.hostRequestTimeouts[requestId] = setTimeout(async () => {
+                  await this.autoPromoteToHost(requestId, request.playerId);
+                }, timeLeft);
+              }
+            }
+          });
+        }
       }
       callback(data);
     };

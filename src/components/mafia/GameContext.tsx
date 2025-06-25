@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { gameService, FirebaseGameState, FirebasePlayer } from '../../firebase/gameService';
+import { gameService, FirebaseGameState, FirebasePlayer, HostRequest } from '../../firebase/gameService';
 
 export interface Player {
   id: string;
@@ -25,6 +25,7 @@ export interface GameState {
   isConnected: boolean;
   error: string | null;
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
+  hostRequests: HostRequest[];
 }
 
 type GameAction =
@@ -48,6 +49,7 @@ const initialState: GameState = {
   isConnected: false,
   error: null,
   connectionStatus: 'connecting',
+  hostRequests: [],
 };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
@@ -71,6 +73,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const players = Object.values(gameState.players || {});
       const host = players.find(p => p.isHost) || null;
       const eliminatedPlayers = Object.values(gameState.eliminatedPlayers || {});
+      const hostRequests = Object.values(gameState.hostRequests || {});
       const updatedCurrentPlayer = state.currentPlayerId 
         ? players.find(p => p.id === state.currentPlayerId) || null
         : null;
@@ -89,6 +92,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         isConnected: true,
         connectionStatus: 'connected',
         error: null,
+        hostRequests,
       };
 
     case 'SET_CONNECTION_STATUS':
@@ -130,6 +134,9 @@ interface GameContextType {
   resetGame: () => Promise<void>;
   leaveGame: () => Promise<void>;
   testConnection: () => Promise<void>;
+  // Host request actions
+  requestHost: () => Promise<void>;
+  respondToHostRequest: (requestId: string, approved: boolean) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -289,6 +296,37 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Host request actions
+  const requestHost = async () => {
+    try {
+      if (!state.currentPlayerData) {
+        throw new Error('You must be logged in to request host');
+      }
+      
+      dispatch({ type: 'SET_ERROR', payload: { error: null } });
+      await gameService.requestHost(state.currentPlayerData.id, state.currentPlayerData.name);
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to request host';
+      dispatch({ type: 'SET_ERROR', payload: { error: errorMessage } });
+      throw error;
+    }
+  };
+
+  const respondToHostRequest = async (requestId: string, approved: boolean) => {
+    try {
+      if (!state.currentPlayerData?.isHost) {
+        throw new Error('Only the host can respond to host requests');
+      }
+      
+      dispatch({ type: 'SET_ERROR', payload: { error: null } });
+      await gameService.respondToHostRequest(requestId, approved, state.currentPlayerData.id);
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to respond to host request';
+      dispatch({ type: 'SET_ERROR', payload: { error: errorMessage } });
+      throw error;
+    }
+  };
+
   return (
     <GameContext.Provider value={{
       state,
@@ -302,6 +340,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       resetGame,
       leaveGame,
       testConnection,
+      requestHost,
+      respondToHostRequest,
     }}>
       {children}
     </GameContext.Provider>
