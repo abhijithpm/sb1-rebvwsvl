@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase } from 'firebase/database';
+import { getDatabase, connectDatabaseEmulator } from 'firebase/database';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBvOkBwRdtlAsAZzmPiIl13XhijOAWdTAg",
@@ -16,5 +16,9 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Realtime Database and get a reference to the service
 export const database = getDatabase(app);
+
+// Enable offline persistence
+// database.goOffline();
+// database.goOnline();
 
 export default app;
