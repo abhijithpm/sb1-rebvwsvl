@@ -1,6 +1,6 @@
 // In your firebase/gameService.ts file
 
-import { database } from '../firebase/config'// Adjust path if your config file is elsewhere
+import { database } from 'firebase/config'// Adjust path if your config file is elsewhere
 import { ref, onValue } from 'firebase/database'; // Import ref and onValue
 
 // ... other imports and gameService functions
