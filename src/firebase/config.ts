@@ -1,6 +1,11 @@
-import { initializeApp } from 'firebase/app';
-import { getDatabase, connectDatabaseEmulator } from 'firebase/database';
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBryy_mbJ9qf-BBzYUHjgN9bpMxxhqUXk0",
   authDomain: "illam-mafia-demo.firebaseapp.com",
@@ -14,12 +19,4 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Initialize Realtime Database and get a reference to the service
-export const database = getDatabase(app);
-
-// Enable offline persistence
-// database.goOffline();
-// database.goOnline();
-
-export default app;
+const analytics = getAnalytics(app);
