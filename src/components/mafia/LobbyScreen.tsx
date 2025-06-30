@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGame } from './GameContext';
 import { Users, Crown, Play, ArrowLeft, Wifi, WifiOff, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,15 @@ export function LobbyScreen() {
   const [isHost, setIsHost] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const navigate = useNavigate();
+
+  // If game is playing and user has joined, they should be in the game screen
+  // This is handled by MafiaGame component, but we add this as extra safety
+  useEffect(() => {
+    if (gameState?.gamePhase === 'playing' && currentPlayer) {
+      // The MafiaGame component should handle this transition
+      console.log('Game is playing and player has joined - should be in game screen');
+    }
+  }, [gameState?.gamePhase, currentPlayer]);
 
   const handleJoinAsHost = () => {
     if (gameState?.host) return;
@@ -40,6 +49,7 @@ export function LobbyScreen() {
       setShowNameInput(false);
     } catch (error) {
       console.error('Failed to join game:', error);
+      alert('Failed to join game. Please try again.');
     } finally {
       setIsJoining(false);
     }
@@ -53,8 +63,10 @@ export function LobbyScreen() {
     
     try {
       await startGame();
+      // Game state will change to 'playing' and MafiaGame will handle the transition
     } catch (error) {
       console.error('Failed to start game:', error);
+      alert('Failed to start game. Please try again.');
     }
   };
 
@@ -72,6 +84,9 @@ export function LobbyScreen() {
 
   const isCurrentPlayerHost = currentPlayer?.isHost;
   const canStartGame = isCurrentPlayerHost && players.length >= 3;
+
+  // Show message if game is playing but user hasn't joined
+  const showJoinPrompt = gameState?.gamePhase === 'playing' && !currentPlayer;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-900 via-gray-900 to-black text-white">
@@ -109,12 +124,14 @@ export function LobbyScreen() {
           </div>
         </div>
 
-        {/* Error Display */}
-        {gameState?.error && (
-          <div className="mb-6 bg-red-600/20 border border-red-500/30 rounded-lg p-4">
+        {/* Game In Progress Alert */}
+        {showJoinPrompt && (
+          <div className="mb-6 bg-orange-600/20 border border-orange-500/30 rounded-lg p-4">
             <div className="flex items-center">
-              <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
-              <span className="text-red-300">{gameState.error}</span>
+              <AlertCircle className="w-5 h-5 text-orange-400 mr-2" />
+              <span className="text-orange-300">
+                🎮 Game is currently in progress! Join now to participate in the next round.
+              </span>
             </div>
           </div>
         )}
@@ -162,7 +179,9 @@ export function LobbyScreen() {
             {/* Join Options */}
             {!currentPlayer && isConnected && (
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-                <h2 className="text-2xl font-bold mb-6 text-center">Join the Game</h2>
+                <h2 className="text-2xl font-bold mb-6 text-center">
+                  {showJoinPrompt ? 'Join the Game in Progress' : 'Join the Game'}
+                </h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <button
@@ -193,7 +212,10 @@ export function LobbyScreen() {
                     <Users className="w-12 h-12 text-blue-500 mx-auto mb-4" />
                     <h3 className="text-xl font-bold mb-2">Join as Player</h3>
                     <p className="text-gray-300 text-sm">
-                      Enter the game and receive a secret role to play
+                      {showJoinPrompt 
+                        ? 'Join the ongoing game and get your role' 
+                        : 'Enter the game and receive a secret role to play'
+                      }
                     </p>
                   </button>
                 </div>
@@ -201,12 +223,12 @@ export function LobbyScreen() {
             )}
 
             {/* Host Request Panel */}
-            {currentPlayer && (
+            {currentPlayer && !showJoinPrompt && (
               <HostRequestPanel />
             )}
 
             {/* Game Controls */}
-            {currentPlayer && (
+            {currentPlayer && !showJoinPrompt && (
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold">Game Lobby</h2>

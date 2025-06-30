@@ -5,7 +5,7 @@ import { GameScreen } from './GameScreen';
 import { EndGameScreen } from './EndGameScreen';
 
 export function MafiaGame() {
-  const { gameState, isConnected } = useGame();
+  const { gameState, isConnected, currentPlayer } = useGame();
 
   // Show loading state if not connected
   if (!isConnected) {
@@ -33,10 +33,15 @@ export function MafiaGame() {
     );
   }
 
+  // Handle game phase routing
   switch (gameState.gamePhase) {
     case 'lobby':
       return <LobbyScreen />;
     case 'playing':
+      // If game is playing but user hasn't joined, show lobby to join
+      if (!currentPlayer) {
+        return <LobbyScreen />;
+      }
       return <GameScreen />;
     case 'ended':
       return <EndGameScreen />;
