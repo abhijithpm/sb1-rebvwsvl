@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from './GameContext';
-import { Users, Crown, Play, ArrowLeft, Wifi, WifiOff, AlertCircle } from 'lucide-react';
+import { Users, Crown, Play, ArrowLeft, Wifi, WifiOff, AlertCircle, ExclamationTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PlayerList } from './PlayerList';
 import { InstructionsCard } from './InstructionsCard';
 import { HostRequestPanel } from './HostRequestPanel';
 
 export function LobbyScreen() {
-  const { gameState, players, currentPlayer, isConnected, joinAsHost, joinAsPlayer, startGame, leaveGame } = useGame();
+  const { gameState, players, currentPlayer, isConnected, error, joinAsHost, joinAsPlayer, startGame, leaveGame } = useGame();
   const [playerName, setPlayerName] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
   const [isHost, setIsHost] = useState(false);
@@ -49,7 +49,7 @@ export function LobbyScreen() {
       setShowNameInput(false);
     } catch (error) {
       console.error('Failed to join game:', error);
-      alert('Failed to join game. Please try again.');
+      // Error is already handled in GameContext
     } finally {
       setIsJoining(false);
     }
@@ -66,7 +66,7 @@ export function LobbyScreen() {
       // Game state will change to 'playing' and MafiaGame will handle the transition
     } catch (error) {
       console.error('Failed to start game:', error);
-      alert('Failed to start game. Please try again.');
+      // Error is already handled in GameContext
     }
   };
 
@@ -124,6 +124,24 @@ export function LobbyScreen() {
           </div>
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 bg-red-600/20 border border-red-500/30 rounded-lg p-4">
+            <div className="flex items-center">
+              <ExclamationTriangle className="w-5 h-5 text-red-400 mr-2" />
+              <span className="text-red-300">{error}</span>
+            </div>
+            <div className="mt-2 text-sm text-red-200">
+              {error.includes('Permission denied') && (
+                <p>🔧 This might be due to Firebase security rules. Please check the database configuration.</p>
+              )}
+              {error.includes('Network error') && (
+                <p>🌐 Please check your internet connection and try again.</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Game In Progress Alert */}
         {showJoinPrompt && (
           <div className="mb-6 bg-orange-600/20 border border-orange-500/30 rounded-lg p-4">
@@ -177,7 +195,7 @@ export function LobbyScreen() {
             )}
 
             {/* Join Options */}
-            {!currentPlayer && isConnected && (
+            {!currentPlayer && isConnected && !error && (
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
                 <h2 className="text-2xl font-bold mb-6 text-center">
                   {showJoinPrompt ? 'Join the Game in Progress' : 'Join the Game'}
@@ -223,12 +241,12 @@ export function LobbyScreen() {
             )}
 
             {/* Host Request Panel */}
-            {currentPlayer && !showJoinPrompt && (
+            {currentPlayer && !showJoinPrompt && !error && (
               <HostRequestPanel />
             )}
 
             {/* Game Controls */}
-            {currentPlayer && !showJoinPrompt && (
+            {currentPlayer && !showJoinPrompt && !error && (
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold">Game Lobby</h2>
@@ -274,13 +292,26 @@ export function LobbyScreen() {
             )}
 
             {/* Connection Status */}
-            {!isConnected && (
+            {(!isConnected || error) && (
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 text-center">
                 <WifiOff className="w-12 h-12 text-red-400 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold mb-4">Connecting to Game Server...</h2>
-                <p className="text-gray-300">
-                  Please wait while we establish a connection to the Illam Gang room.
+                <h2 className="text-2xl font-bold mb-4">
+                  {error ? 'Connection Error' : 'Connecting to Game Server...'}
+                </h2>
+                <p className="text-gray-300 mb-4">
+                  {error 
+                    ? 'Unable to connect to the Illam Gang room. Please try refreshing the page.'
+                    : 'Please wait while we establish a connection to the Illam Gang room.'
+                  }
                 </p>
+                {error && (
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    Refresh Page
+                  </button>
+                )}
               </div>
             )}
           </div>

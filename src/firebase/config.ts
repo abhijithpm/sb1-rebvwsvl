@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
+import { getDatabase, connectDatabaseEmulator } from "firebase/database";
 import { getAnalytics } from "firebase/analytics";
 
 // Your web app's Firebase configuration
@@ -22,7 +22,10 @@ const app = initializeApp(firebaseConfig);
 // Initialize Realtime Database and get a reference to the service
 export const database = getDatabase(app);
 
-// Initialize Analytics
-const analytics = getAnalytics(app);
+// Initialize Analytics (only in production)
+let analytics;
+if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+  analytics = getAnalytics(app);
+}
 
 export { app, analytics };

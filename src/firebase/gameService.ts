@@ -55,9 +55,49 @@ export class GameService {
   private currentPlayerId: string | null = null;
   private hostRequestTimeouts: { [key: string]: NodeJS.Timeout } = {};
 
+  // Test connection with better error handling
+  async testConnection(): Promise<boolean> {
+    try {
+      console.log('🔄 Testing Firebase connection...');
+      const testRef = ref(database, 'connectionTest');
+      await set(testRef, { 
+        status: 'connected', 
+        timestamp: Date.now(),
+        test: true,
+        environment: window.location.hostname
+      });
+      
+      const snapshot = await get(testRef);
+      if (snapshot.exists()) {
+        await remove(testRef); // Clean up test data
+        console.log('✅ Firebase connection test successful');
+        return true;
+      }
+      console.warn('⚠️ Firebase connection test: No data returned');
+      return false;
+    } catch (error) {
+      console.error('❌ Firebase connection test failed:', error);
+      
+      // Check if it's a permission error
+      if (error.code === 'PERMISSION_DENIED') {
+        console.error('🚫 Permission denied - check Firebase security rules');
+        throw new Error('Database access denied. Please check Firebase security rules.');
+      }
+      
+      // Check if it's a network error
+      if (error.code === 'NETWORK_ERROR' || error.message.includes('network')) {
+        console.error('🌐 Network error - check internet connection');
+        throw new Error('Network error. Please check your internet connection.');
+      }
+      
+      throw new Error(`Connection failed: ${error.message}`);
+    }
+  }
+
   // Initialize room if it doesn't exist
   async initializeRoom(): Promise<void> {
     try {
+      console.log('🔄 Initializing room...');
       const snapshot = await get(ROOM_REF);
       if (!snapshot.exists()) {
         const initialState: FirebaseGameState = {
@@ -82,6 +122,11 @@ export class GameService {
       }
     } catch (error) {
       console.error('❌ Failed to initialize room:', error);
+      
+      if (error.code === 'PERMISSION_DENIED') {
+        throw new Error('Permission denied. Please check Firebase security rules for write access.');
+      }
+      
       throw new Error(`Failed to initialize room: ${error.message}`);
     }
   }
@@ -109,6 +154,7 @@ export class GameService {
       console.log(`✅ Presence setup for player ${playerId}`);
     } catch (error) {
       console.error('❌ Failed to setup presence:', error);
+      // Don't throw here as presence is not critical for basic functionality
     }
   }
 
@@ -350,6 +396,11 @@ export class GameService {
       return playerId;
     } catch (error) {
       console.error('❌ Failed to join as host:', error);
+      
+      if (error.code === 'PERMISSION_DENIED') {
+        throw new Error('Permission denied. Unable to join as host.');
+      }
+      
       throw error;
     }
   }
@@ -380,6 +431,11 @@ export class GameService {
       return playerId;
     } catch (error) {
       console.error('❌ Failed to join as player:', error);
+      
+      if (error.code === 'PERMISSION_DENIED') {
+        throw new Error('Permission denied. Unable to join as player.');
+      }
+      
       throw error;
     }
   }
@@ -418,6 +474,11 @@ export class GameService {
       console.log('✅ Game started with roles assigned');
     } catch (error) {
       console.error('❌ Failed to start game:', error);
+      
+      if (error.code === 'PERMISSION_DENIED') {
+        throw new Error('Permission denied. Unable to start game.');
+      }
+      
       throw error;
     }
   }
@@ -441,6 +502,11 @@ export class GameService {
       console.log(`✅ Player eliminated: ${player.name}`);
     } catch (error) {
       console.error('❌ Failed to eliminate player:', error);
+      
+      if (error.code === 'PERMISSION_DENIED') {
+        throw new Error('Permission denied. Unable to eliminate player.');
+      }
+      
       throw error;
     }
   }
@@ -455,6 +521,11 @@ export class GameService {
       });
     } catch (error) {
       console.error('❌ Failed to update timer:', error);
+      
+      if (error.code === 'PERMISSION_DENIED') {
+        throw new Error('Permission denied. Unable to update timer.');
+      }
+      
       throw error;
     }
   }
@@ -471,6 +542,11 @@ export class GameService {
       console.log(`✅ Game ended. Winner: ${winner}`);
     } catch (error) {
       console.error('❌ Failed to end game:', error);
+      
+      if (error.code === 'PERMISSION_DENIED') {
+        throw new Error('Permission denied. Unable to end game.');
+      }
+      
       throw error;
     }
   }
@@ -519,6 +595,11 @@ export class GameService {
       console.log('✅ Game reset successfully - players and host preserved');
     } catch (error) {
       console.error('❌ Failed to reset game:', error);
+      
+      if (error.code === 'PERMISSION_DENIED') {
+        throw new Error('Permission denied. Unable to reset game.');
+      }
+      
       throw error;
     }
   }
@@ -563,6 +644,11 @@ export class GameService {
       }
     } catch (error) {
       console.error('❌ Failed to leave game:', error);
+      
+      if (error.code === 'PERMISSION_DENIED') {
+        throw new Error('Permission denied. Unable to leave game.');
+      }
+      
       throw error;
     }
   }
@@ -596,10 +682,17 @@ export class GameService {
       callback(data);
     };
     
-    onValue(ROOM_REF, listener, (error) => {
+    const errorHandler = (error: any) => {
       console.error('❌ Firebase listener error:', error);
+      
+      if (error.code === 'PERMISSION_DENIED') {
+        console.error('🚫 Permission denied - check Firebase security rules');
+      }
+      
       callback(null);
-    });
+    };
+    
+    onValue(ROOM_REF, listener, errorHandler);
     
     return () => {
       off(ROOM_REF, 'value', listener);
@@ -617,10 +710,17 @@ export class GameService {
       callback(players);
     };
     
-    onValue(playersRef, listener, (error) => {
+    const errorHandler = (error: any) => {
       console.error('❌ Players listener error:', error);
+      
+      if (error.code === 'PERMISSION_DENIED') {
+        console.error('🚫 Permission denied - check Firebase security rules');
+      }
+      
       callback([]);
-    });
+    };
+    
+    onValue(playersRef, listener, errorHandler);
     
     return () => {
       off(playersRef, 'value', listener);
@@ -635,30 +735,12 @@ export class GameService {
       return snapshot.val();
     } catch (error) {
       console.error('❌ Failed to get current game state:', error);
-      return null;
-    }
-  }
-
-  // Test connection
-  async testConnection(): Promise<boolean> {
-    try {
-      const testRef = ref(database, 'connectionTest');
-      await set(testRef, { 
-        status: 'connected', 
-        timestamp: Date.now(),
-        test: true 
-      });
       
-      const snapshot = await get(testRef);
-      if (snapshot.exists()) {
-        await remove(testRef); // Clean up test data
-        console.log('✅ Firebase connection test successful');
-        return true;
+      if (error.code === 'PERMISSION_DENIED') {
+        throw new Error('Permission denied. Unable to read game state.');
       }
-      return false;
-    } catch (error) {
-      console.error('❌ Firebase connection test failed:', error);
-      return false;
+      
+      return null;
     }
   }
 }
