@@ -5,9 +5,22 @@ import { GameScreen } from './GameScreen';
 import { EndGameScreen } from './EndGameScreen';
 
 export function MafiaGame() {
-  const { state } = useGame();
+  const { gameState } = useGame();
 
-  switch (state.gamePhase) {
+  // Show loading state if gameState is not yet loaded
+  if (!gameState) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-900 via-gray-900 to-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold mb-2">Loading Game...</h2>
+          <p className="text-gray-300">Connecting to Illam Gang room</p>
+        </div>
+      </div>
+    );
+  }
+
+  switch (gameState.gamePhase) {
     case 'lobby':
       return <LobbyScreen />;
     case 'playing':

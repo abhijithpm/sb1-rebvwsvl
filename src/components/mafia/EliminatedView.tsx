@@ -3,7 +3,7 @@ import { useGame } from './GameContext';
 import { Skull, Eye } from 'lucide-react';
 
 export function EliminatedView() {
-  const { state } = useGame();
+  const { players, eliminatedPlayers } = useGame();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-red-900 text-white flex items-center justify-center">
@@ -31,14 +31,14 @@ export function EliminatedView() {
             <div className="bg-green-600/20 border border-green-500/30 rounded-lg p-4">
               <h3 className="font-bold text-green-300 mb-2">Alive Players</h3>
               <p className="text-2xl font-bold text-green-400">
-                {state.players.filter(p => p.isAlive).length}
+                {players.filter(p => p.isAlive).length}
               </p>
             </div>
             
             <div className="bg-red-600/20 border border-red-500/30 rounded-lg p-4">
               <h3 className="font-bold text-red-300 mb-2">Eliminated</h3>
               <p className="text-2xl font-bold text-red-400">
-                {state.eliminatedPlayers.length}
+                {eliminatedPlayers.length}
               </p>
             </div>
           </div>
@@ -47,7 +47,7 @@ export function EliminatedView() {
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
           <h3 className="text-xl font-bold mb-4">Remaining Players</h3>
           <div className="space-y-2">
-            {state.players.filter(p => p.isAlive).map((player) => (
+            {players.filter(p => p.isAlive).map((player) => (
               <div
                 key={player.id}
                 className="flex items-center justify-between p-3 bg-white/5 rounded-lg"

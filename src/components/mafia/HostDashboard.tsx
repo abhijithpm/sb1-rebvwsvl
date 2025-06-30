@@ -5,7 +5,7 @@ import { KillSelector } from './KillSelector';
 import { Crown, Users, Skull, Trophy, Wifi } from 'lucide-react';
 
 export function HostDashboard() {
-  const { state, endGame } = useGame();
+  const { players, eliminatedPlayers, endGame } = useGame();
 
   const handleEndGame = async (winner: string) => {
     try {
@@ -15,7 +15,7 @@ export function HostDashboard() {
     }
   };
 
-  const alivePlayers = state.players.filter(p => p.isAlive);
+  const alivePlayers = players.filter(p => p.isAlive);
   const mafiaCount = alivePlayers.filter(p => p.role === 'Mafia').length;
   const villagerCount = alivePlayers.filter(p => p.role !== 'Mafia').length;
 
@@ -65,7 +65,7 @@ export function HostDashboard() {
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center">
             <Trophy className="w-8 h-8 text-purple-400 mx-auto mb-3" />
             <h3 className="text-lg font-bold mb-2">Eliminated</h3>
-            <p className="text-2xl font-bold text-purple-400">{state.eliminatedPlayers.length}</p>
+            <p className="text-2xl font-bold text-purple-400">{eliminatedPlayers.length}</p>
           </div>
         </div>
 
@@ -101,7 +101,7 @@ export function HostDashboard() {
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
             <h3 className="text-xl font-bold mb-4">Player Roles (Live)</h3>
             <div className="space-y-3">
-              {state.players.map((player) => (
+              {players.map((player) => (
                 <div
                   key={player.id}
                   className={`p-4 rounded-lg border ${
@@ -141,7 +141,7 @@ export function HostDashboard() {
             <div className="mt-4 pt-4 border-t border-white/20">
               <div className="flex items-center justify-center text-sm text-gray-400">
                 <Wifi className="w-4 h-4 mr-2" />
-                Real-time updates • {state.players.length} players connected
+                Real-time updates • {players.length} players connected
               </div>
             </div>
           </div>

@@ -5,8 +5,7 @@ import { RoleCard } from './RoleCard';
 import { Skull, Users, Clock } from 'lucide-react';
 
 export function PlayerView() {
-  const { state } = useGame();
-  const currentPlayer = state.currentPlayer;
+  const { currentPlayer, players, eliminatedPlayers } = useGame();
 
   if (!currentPlayer) return null;
 
@@ -37,7 +36,7 @@ export function PlayerView() {
             <Users className="w-8 h-8 text-blue-400 mx-auto mb-3" />
             <h3 className="text-lg font-bold mb-2">Alive Players</h3>
             <p className="text-2xl font-bold text-blue-400">
-              {state.players.filter(p => p.isAlive).length}
+              {players.filter(p => p.isAlive).length}
             </p>
           </div>
           
@@ -45,7 +44,7 @@ export function PlayerView() {
             <Skull className="w-8 h-8 text-red-400 mx-auto mb-3" />
             <h3 className="text-lg font-bold mb-2">Eliminated</h3>
             <p className="text-2xl font-bold text-red-400">
-              {state.eliminatedPlayers.length}
+              {eliminatedPlayers.length}
             </p>
           </div>
           
@@ -62,7 +61,7 @@ export function PlayerView() {
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
           <h3 className="text-xl font-bold mb-4">All Players</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {state.players.map((player) => (
+            {players.map((player) => (
               <div
                 key={player.id}
                 className={`p-4 rounded-lg border ${

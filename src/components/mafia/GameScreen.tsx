@@ -5,9 +5,9 @@ import { HostDashboard } from './HostDashboard';
 import { EliminatedView } from './EliminatedView';
 
 export function GameScreen() {
-  const { state } = useGame();
+  const { currentPlayer } = useGame();
 
-  if (!state.currentPlayer) {
+  if (!currentPlayer) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-900 via-gray-900 to-black flex items-center justify-center">
         <div className="text-white text-center">
@@ -18,11 +18,11 @@ export function GameScreen() {
     );
   }
 
-  if (!state.currentPlayer.isAlive) {
+  if (!currentPlayer.isAlive) {
     return <EliminatedView />;
   }
 
-  if (state.currentPlayer.isHost) {
+  if (currentPlayer.isHost) {
     return <HostDashboard />;
   }
 

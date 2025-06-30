@@ -7,7 +7,7 @@ import { InstructionsCard } from './InstructionsCard';
 import { HostRequestPanel } from './HostRequestPanel';
 
 export function LobbyScreen() {
-  const { state, joinAsHost, joinAsPlayer, startGame, leaveGame } = useGame();
+  const { gameState, players, currentPlayer, isConnected, joinAsHost, joinAsPlayer, startGame, leaveGame } = useGame();
   const [playerName, setPlayerName] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
   const [isHost, setIsHost] = useState(false);
@@ -15,7 +15,7 @@ export function LobbyScreen() {
   const navigate = useNavigate();
 
   const handleJoinAsHost = () => {
-    if (state.host) return;
+    if (gameState?.host) return;
     setIsHost(true);
     setShowNameInput(true);
   };
@@ -46,7 +46,7 @@ export function LobbyScreen() {
   };
 
   const handleStartGame = async () => {
-    if (state.players.length < 3) {
+    if (players.length < 3) {
       alert('Need at least 3 players to start the game!');
       return;
     }
@@ -60,7 +60,9 @@ export function LobbyScreen() {
 
   const handleLeaveGame = async () => {
     try {
-      await leaveGame();
+      if (currentPlayer) {
+        await leaveGame(currentPlayer.id);
+      }
       navigate('/mafia-home');
     } catch (error) {
       console.error('Failed to leave game:', error);
@@ -68,8 +70,8 @@ export function LobbyScreen() {
     }
   };
 
-  const isCurrentPlayerHost = state.currentPlayerData?.isHost;
-  const canStartGame = isCurrentPlayerHost && state.players.length >= 3;
+  const isCurrentPlayerHost = currentPlayer?.isHost;
+  const canStartGame = isCurrentPlayerHost && players.length >= 3;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-900 via-gray-900 to-black text-white">
@@ -93,7 +95,7 @@ export function LobbyScreen() {
           
           {/* Connection Status */}
           <div className="flex items-center space-x-2">
-            {state.isConnected ? (
+            {isConnected ? (
               <div className="flex items-center text-green-400">
                 <Wifi className="w-5 h-5 mr-1" />
                 <span className="text-sm">Connected</span>
@@ -108,11 +110,11 @@ export function LobbyScreen() {
         </div>
 
         {/* Error Display */}
-        {state.error && (
+        {gameState?.error && (
           <div className="mb-6 bg-red-600/20 border border-red-500/30 rounded-lg p-4">
             <div className="flex items-center">
               <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
-              <span className="text-red-300">{state.error}</span>
+              <span className="text-red-300">{gameState.error}</span>
             </div>
           </div>
         )}
@@ -158,16 +160,16 @@ export function LobbyScreen() {
             )}
 
             {/* Join Options */}
-            {!state.currentPlayerData && state.isConnected && (
+            {!currentPlayer && isConnected && (
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
                 <h2 className="text-2xl font-bold mb-6 text-center">Join the Game</h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <button
                     onClick={handleJoinAsHost}
-                    disabled={!!state.host}
+                    disabled={!!gameState?.host}
                     className={`relative p-6 rounded-xl border-2 transition-all duration-300 ${
-                      state.host
+                      gameState?.host
                         ? 'border-gray-600 bg-gray-800/50 cursor-not-allowed opacity-50'
                         : 'border-yellow-500 bg-gradient-to-r from-yellow-600/20 to-orange-600/20 hover:from-yellow-500/30 hover:to-orange-500/30 hover:scale-105'
                     }`}
@@ -175,9 +177,9 @@ export function LobbyScreen() {
                     <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
                     <h3 className="text-xl font-bold mb-2">Join as Host</h3>
                     <p className="text-gray-300 text-sm">
-                      {state.host ? 'Host position taken' : 'Control the game, manage players, and oversee rounds'}
+                      {gameState?.host ? 'Host position taken' : 'Control the game, manage players, and oversee rounds'}
                     </p>
-                    {state.host && (
+                    {gameState?.host && (
                       <div className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
                         Taken
                       </div>
@@ -199,12 +201,12 @@ export function LobbyScreen() {
             )}
 
             {/* Host Request Panel */}
-            {state.currentPlayerData && (
+            {currentPlayer && (
               <HostRequestPanel />
             )}
 
             {/* Game Controls */}
-            {state.currentPlayerData && (
+            {currentPlayer && (
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold">Game Lobby</h2>
@@ -227,15 +229,15 @@ export function LobbyScreen() {
                 <div className="bg-green-600/20 border border-green-500/30 rounded-lg p-4 mb-6">
                   <p className="text-green-300">
                     ✅ You joined as: <span className="font-bold text-white">
-                      {state.currentPlayerData.name} {state.currentPlayerData.isHost ? '(Host)' : '(Player)'}
+                      {currentPlayer.name} {currentPlayer.isHost ? '(Host)' : '(Player)'}
                     </span>
                   </p>
                 </div>
 
-                {!canStartGame && state.players.length < 3 && (
+                {!canStartGame && players.length < 3 && (
                   <div className="bg-yellow-600/20 border border-yellow-500/30 rounded-lg p-4 mb-6">
                     <p className="text-yellow-300">
-                      ⚠️ Need at least 3 players to start the game. Currently: {state.players.length}
+                      ⚠️ Need at least 3 players to start the game. Currently: {players.length}
                     </p>
                   </div>
                 )}
@@ -243,14 +245,14 @@ export function LobbyScreen() {
                 {/* Real-time Player Count */}
                 <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-4">
                   <p className="text-blue-300">
-                    🔄 Real-time sync active • {state.players.length} player{state.players.length !== 1 ? 's' : ''} online
+                    🔄 Real-time sync active • {players.length} player{players.length !== 1 ? 's' : ''} online
                   </p>
                 </div>
               </div>
             )}
 
             {/* Connection Status */}
-            {!state.isConnected && (
+            {!isConnected && (
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 text-center">
                 <WifiOff className="w-12 h-12 text-red-400 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold mb-4">Connecting to Game Server...</h2>
@@ -263,7 +265,7 @@ export function LobbyScreen() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <PlayerList players={state.players} host={state.host} />
+            <PlayerList players={players} host={gameState?.host} />
             <InstructionsCard />
           </div>
         </div>

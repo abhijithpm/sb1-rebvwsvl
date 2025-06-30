@@ -3,14 +3,14 @@ import { useGame } from './GameContext';
 import { Clock, Play, Pause, RotateCcw } from 'lucide-react';
 
 export function Timer() {
-  const { state, updateTimer } = useGame();
+  const { gameState, currentPlayer, updateTimer, isConnected } = useGame();
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
-    if (state.isTimerRunning && state.timer > 0) {
+    if (gameState?.isTimerRunning && gameState.timer > 0) {
       interval = setInterval(async () => {
-        const newTimer = Math.max(0, state.timer - 1);
+        const newTimer = Math.max(0, gameState.timer - 1);
         const isRunning = newTimer > 0;
         await updateTimer(newTimer, isRunning);
       }, 1000);
@@ -19,7 +19,7 @@ export function Timer() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [state.isTimerRunning, state.timer, updateTimer]);
+  }, [gameState?.isTimerRunning, gameState?.timer, updateTimer]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -32,10 +32,14 @@ export function Timer() {
   };
 
   const handleStopTimer = async () => {
-    await updateTimer(state.timer, false);
+    if (gameState) {
+      await updateTimer(gameState.timer, false);
+    }
   };
 
-  const isHost = state.currentPlayer?.isHost;
+  const isHost = currentPlayer?.isHost;
+  const timer = gameState?.timer || 0;
+  const isTimerRunning = gameState?.isTimerRunning || false;
 
   return (
     <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
@@ -70,14 +74,14 @@ export function Timer() {
 
       <div className="text-center">
         <div className={`text-6xl font-bold mb-4 ${
-          state.timer <= 30 && state.timer > 0 ? 'text-red-400 animate-pulse' : 'text-white'
+          timer <= 30 && timer > 0 ? 'text-red-400 animate-pulse' : 'text-white'
         }`}>
-          {formatTime(state.timer)}
+          {formatTime(timer)}
         </div>
 
         {isHost && (
           <div className="flex justify-center space-x-4">
-            {state.isTimerRunning ? (
+            {isTimerRunning ? (
               <button
                 onClick={handleStopTimer}
                 className="flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
@@ -87,7 +91,7 @@ export function Timer() {
               </button>
             ) : (
               <button
-                onClick={() => handleStartTimer(state.timer || 180)}
+                onClick={() => handleStartTimer(timer || 180)}
                 className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors"
               >
                 <Play className="w-4 h-4 mr-2" />
@@ -106,14 +110,14 @@ export function Timer() {
         )}
 
         {/* Real-time sync indicator */}
-        {state.isConnected && (
+        {isConnected && (
           <div className="mt-4 text-xs text-gray-400">
             🔄 Synced across all devices
           </div>
         )}
       </div>
 
-      {state.timer === 0 && (
+      {timer === 0 && (
         <div className="mt-4 p-3 bg-red-600/20 border border-red-500/30 rounded-lg text-center">
           <p className="text-red-300 font-bold">⏰ TIME'S UP!</p>
         </div>

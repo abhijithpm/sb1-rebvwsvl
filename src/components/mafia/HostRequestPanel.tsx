@@ -3,14 +3,13 @@ import { useGame } from './GameContext';
 import { Crown, Clock, Check, X, AlertCircle, Users } from 'lucide-react';
 
 export function HostRequestPanel() {
-  const { state, requestHost, respondToHostRequest } = useGame();
+  const { gameState, players, currentPlayer, hostRequests, requestHost, respondToHostRequest } = useGame();
   const [isRequesting, setIsRequesting] = useState(false);
   const [timeLeft, setTimeLeft] = useState<{ [key: string]: number }>({});
 
-  const currentPlayer = state.currentPlayerData;
   const isHost = currentPlayer?.isHost;
-  const hasHost = !!state.host;
-  const pendingRequests = state.hostRequests.filter(req => req.status === 'pending');
+  const hasHost = !!gameState?.host;
+  const pendingRequests = hostRequests.filter(req => req.status === 'pending');
   
   // Check if current player has a pending request
   const currentPlayerRequest = pendingRequests.find(req => req.playerId === currentPlayer?.id);
@@ -37,7 +36,7 @@ export function HostRequestPanel() {
     
     setIsRequesting(true);
     try {
-      await requestHost();
+      await requestHost(currentPlayer.id, currentPlayer.name);
     } catch (error) {
       console.error('Failed to request host:', error);
     } finally {
@@ -46,8 +45,10 @@ export function HostRequestPanel() {
   };
 
   const handleRespondToRequest = async (requestId: string, approved: boolean) => {
+    if (!currentPlayer) return;
+    
     try {
-      await respondToHostRequest(requestId, approved);
+      await respondToHostRequest(requestId, approved, currentPlayer.id);
     } catch (error) {
       console.error('Failed to respond to host request:', error);
     }
@@ -58,7 +59,7 @@ export function HostRequestPanel() {
   };
 
   // Don't show panel if game has started
-  if (state.gameStarted) return null;
+  if (gameState?.gameStarted) return null;
 
   return (
     <div className="space-y-4">

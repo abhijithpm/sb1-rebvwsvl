@@ -3,12 +3,12 @@ import { useGame } from './GameContext';
 import { Skull, AlertTriangle } from 'lucide-react';
 
 export function KillSelector() {
-  const { state, eliminatePlayer } = useGame();
+  const { players, eliminatePlayer, isConnected } = useGame();
   const [selectedPlayer, setSelectedPlayer] = useState<string>('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [isEliminating, setIsEliminating] = useState(false);
 
-  const alivePlayers = state.players.filter(p => p.isAlive && !p.isHost);
+  const alivePlayers = players.filter(p => p.isAlive && !p.isHost);
 
   const handleEliminate = async () => {
     if (selectedPlayer) {
@@ -93,7 +93,7 @@ export function KillSelector() {
           )}
 
           {/* Real-time sync indicator */}
-          {state.isConnected && (
+          {isConnected && (
             <div className="text-xs text-gray-400 text-center">
               🔄 Changes sync instantly to all players
             </div>

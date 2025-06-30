@@ -5,6 +5,9 @@ interface GameContextType {
   gameState: FirebaseGameState | null;
   players: FirebasePlayer[];
   currentPlayerId: string | null;
+  currentPlayer: FirebasePlayer | null;
+  eliminatedPlayers: FirebasePlayer[];
+  hostRequests: any[];
   isHost: boolean;
   isConnected: boolean;
   joinAsHost: (playerName: string) => Promise<string | null>;
@@ -31,6 +34,10 @@ export function GameProvider({ children }: GameProviderProps) {
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
+  // Derived states
+  const currentPlayer = currentPlayerId ? players.find(p => p.id === currentPlayerId) || null : null;
+  const eliminatedPlayers = players.filter(p => !p.isAlive);
+  const hostRequests: any[] = []; // TODO: Implement host requests from Firebase
   const isHost = gameState?.host === currentPlayerId;
 
   useEffect(() => {
@@ -172,6 +179,9 @@ export function GameProvider({ children }: GameProviderProps) {
     gameState,
     players,
     currentPlayerId,
+    currentPlayer,
+    eliminatedPlayers,
+    hostRequests,
     isHost,
     isConnected,
     joinAsHost,

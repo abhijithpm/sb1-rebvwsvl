@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Trophy, RotateCcw, Home, Wifi } from 'lucide-react';
 
 export function EndGameScreen() {
-  const { state, resetGame } = useGame();
+  const { gameState, players, eliminatedPlayers, resetGame } = useGame();
   const navigate = useNavigate();
 
   const handlePlayAgain = async () => {
@@ -19,6 +19,17 @@ export function EndGameScreen() {
     navigate('/mafia-home');
   };
 
+  if (!gameState) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading game results...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white flex items-center justify-center">
       <div className="max-w-2xl mx-auto px-4 text-center">
@@ -28,7 +39,7 @@ export function EndGameScreen() {
             GAME OVER
           </h1>
           <h2 className="text-4xl font-bold mb-6">
-            {state.winner} Win!
+            {gameState.winner} Win!
           </h2>
           
           {/* Real-time indicator */}
@@ -45,7 +56,7 @@ export function EndGameScreen() {
             <div className="bg-green-600/20 border border-green-500/30 rounded-lg p-4">
               <h4 className="font-bold text-green-300 mb-2">Survivors</h4>
               <div className="space-y-2">
-                {state.players.filter(p => p.isAlive).map((player) => (
+                {players.filter(p => p.isAlive).map((player) => (
                   <div key={player.id} className="flex items-center justify-between">
                     <span>{player.name}</span>
                     <span className="text-sm bg-green-600 px-2 py-1 rounded">
@@ -59,7 +70,7 @@ export function EndGameScreen() {
             <div className="bg-red-600/20 border border-red-500/30 rounded-lg p-4">
               <h4 className="font-bold text-red-300 mb-2">Eliminated</h4>
               <div className="space-y-2">
-                {state.eliminatedPlayers.map((player) => (
+                {eliminatedPlayers.map((player) => (
                   <div key={player.id} className="flex items-center justify-between">
                     <span>{player.name}</span>
                     <span className="text-sm bg-red-600 px-2 py-1 rounded">
@@ -76,15 +87,15 @@ export function EndGameScreen() {
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div>
                 <p className="text-gray-400">Total Players</p>
-                <p className="font-bold">{state.players.length}</p>
+                <p className="font-bold">{players.length}</p>
               </div>
               <div>
                 <p className="text-gray-400">Survivors</p>
-                <p className="font-bold">{state.players.filter(p => p.isAlive).length}</p>
+                <p className="font-bold">{players.filter(p => p.isAlive).length}</p>
               </div>
               <div>
                 <p className="text-gray-400">Eliminated</p>
-                <p className="font-bold">{state.eliminatedPlayers.length}</p>
+                <p className="font-bold">{eliminatedPlayers.length}</p>
               </div>
             </div>
           </div>
