@@ -23,6 +23,14 @@ export function LobbyScreen() {
     }
   }, [gameState?.gamePhase, currentPlayer]);
 
+  // Check if complete reset is required
+  useEffect(() => {
+    if (gameState?.requiresCompleteReset) {
+      console.log('Complete reset detected - redirecting to home');
+      navigate('/mafia-home');
+    }
+  }, [gameState?.requiresCompleteReset, navigate]);
+
   const handleJoinAsHost = () => {
     if (gameState?.host) return;
     setIsHost(true);
@@ -87,6 +95,42 @@ export function LobbyScreen() {
 
   // Show message if game is playing but user hasn't joined
   const showJoinPrompt = gameState?.gamePhase === 'playing' && !currentPlayer;
+
+  // Show reset message if complete reset is required
+  if (gameState?.requiresCompleteReset) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-900 via-gray-900 to-black text-white flex items-center justify-center">
+        <div className="max-w-2xl mx-auto px-4 text-center">
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent mb-4">
+              GAME RESET IN PROGRESS
+            </h1>
+            
+            <p className="text-xl text-gray-300 mb-6">
+              The game has ended and all data is being cleared. Please wait while we reset the room.
+            </p>
+            
+            <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-4 mb-6">
+              <p className="text-blue-300">
+                🔄 All players must rejoin after the reset is complete.
+              </p>
+            </div>
+            
+            <button
+              onClick={() => navigate('/mafia-home')}
+              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold transition-colors"
+            >
+              Go to Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-900 via-gray-900 to-black text-white">

@@ -45,17 +45,20 @@ export interface FirebaseGameState {
   roomCreated: number;
   hostRequests: { [key: string]: HostRequest };
   gameEndedAt?: number;
-  requiresRelogin?: boolean;
+  requiresCompleteReset?: boolean;
+  resetScheduledAt?: number;
 }
 
 const ROOM_ID = 'illam-gang';
 const ROOM_REF = ref(database, `rooms/${ROOM_ID}`);
 const HOST_REQUEST_TIMEOUT = 30000; // 30 seconds
+const RESET_DELAY = 10000; // 10 seconds delay before complete reset
 
 export class GameService {
   private listeners: { [key: string]: (data: any) => void } = {};
   private currentPlayerId: string | null = null;
   private hostRequestTimeouts: { [key: string]: NodeJS.Timeout } = {};
+  private resetTimeout: NodeJS.Timeout | null = null;
 
   // Test connection with better error handling
   async testConnection(): Promise<boolean> {
@@ -115,18 +118,18 @@ export class GameService {
           lastUpdated: Date.now(),
           roomCreated: Date.now(),
           hostRequests: {},
-          requiresRelogin: false
+          requiresCompleteReset: false
         };
         await set(ROOM_REF, initialState);
         console.log('✅ Room initialized successfully');
       } else {
         console.log('✅ Room already exists');
         
-        // Check if game ended and requires relogin
+        // Check if complete reset is required
         const gameState = snapshot.val() as FirebaseGameState;
-        if (gameState.requiresRelogin) {
-          console.log('🔄 Game ended - clearing all data and requiring relogin');
-          await this.completeGameReset();
+        if (gameState.requiresCompleteReset) {
+          console.log('🔄 Complete reset required - clearing all data');
+          await this.performCompleteReset();
         } else {
           // Clean up expired host requests on initialization
           await this.cleanupExpiredHostRequests();
@@ -143,14 +146,19 @@ export class GameService {
     }
   }
 
-  // Complete game reset - clears all data and requires fresh login
-  async completeGameReset(): Promise<void> {
+  // Perform complete reset - clears all data and requires fresh login
+  async performCompleteReset(): Promise<void> {
     try {
-      console.log('🔄 Performing complete game reset...');
+      console.log('🔄 Performing complete database reset...');
       
-      // Clear all host request timeouts
+      // Clear all timeouts
       Object.values(this.hostRequestTimeouts).forEach(timeout => clearTimeout(timeout));
       this.hostRequestTimeouts = {};
+      
+      if (this.resetTimeout) {
+        clearTimeout(this.resetTimeout);
+        this.resetTimeout = null;
+      }
 
       // Create completely fresh state
       const freshState: FirebaseGameState = {
@@ -165,17 +173,35 @@ export class GameService {
         lastUpdated: Date.now(),
         roomCreated: Date.now(),
         hostRequests: {},
-        requiresRelogin: false
+        requiresCompleteReset: false
       };
 
       await set(ROOM_REF, freshState);
       this.currentPlayerId = null;
       
-      console.log('✅ Complete game reset successful - all data cleared');
+      console.log('✅ Complete database reset successful - all data cleared');
     } catch (error) {
-      console.error('❌ Failed to perform complete game reset:', error);
+      console.error('❌ Failed to perform complete reset:', error);
       throw error;
     }
+  }
+
+  // Schedule complete reset after game ends
+  private scheduleCompleteReset(): void {
+    console.log('⏰ Scheduling complete reset in 10 seconds...');
+    
+    if (this.resetTimeout) {
+      clearTimeout(this.resetTimeout);
+    }
+    
+    this.resetTimeout = setTimeout(async () => {
+      try {
+        await this.performCompleteReset();
+        console.log('✅ Scheduled complete reset executed');
+      } catch (error) {
+        console.error('❌ Failed to execute scheduled reset:', error);
+      }
+    }, RESET_DELAY);
   }
 
   // Set up presence system for a player
@@ -506,7 +532,7 @@ export class GameService {
         gamePhase: 'playing',
         lastUpdated: Date.now(),
         hostRequests: {}, // Clear all host requests when game starts
-        requiresRelogin: false // Reset relogin flag when starting new game
+        requiresCompleteReset: false // Reset flag when starting new game
       };
 
       // Clear all host request timeouts
@@ -578,7 +604,7 @@ export class GameService {
     }
   }
 
-  // End game and mark for complete reset
+  // End game and schedule complete reset
   async endGame(winner: string): Promise<void> {
     try {
       await update(ROOM_REF, {
@@ -586,10 +612,15 @@ export class GameService {
         winner,
         isTimerRunning: false,
         gameEndedAt: Date.now(),
-        requiresRelogin: true, // Mark that complete reset is needed
+        requiresCompleteReset: true, // Mark for complete reset
+        resetScheduledAt: Date.now() + RESET_DELAY,
         lastUpdated: Date.now()
       });
-      console.log(`✅ Game ended. Winner: ${winner}. Complete reset will be triggered.`);
+
+      // Schedule complete reset
+      this.scheduleCompleteReset();
+      
+      console.log(`✅ Game ended. Winner: ${winner}. Complete reset scheduled in ${RESET_DELAY/1000} seconds.`);
     } catch (error) {
       console.error('❌ Failed to end game:', error);
       
@@ -626,7 +657,7 @@ export class GameService {
         winner: null,
         lastUpdated: Date.now(),
         hostRequests: {},
-        requiresRelogin: false
+        requiresCompleteReset: false
       };
 
       // Reset all players to alive and remove roles
@@ -662,12 +693,15 @@ export class GameService {
       const gameState = snapshot.val() as FirebaseGameState;
       
       if (gameState?.host === playerId) {
-        // If host leaves, trigger complete reset
+        // If host leaves, schedule complete reset
         await update(ROOM_REF, {
-          requiresRelogin: true,
+          requiresCompleteReset: true,
+          resetScheduledAt: Date.now() + RESET_DELAY,
           lastUpdated: Date.now()
         });
-        console.log('✅ Host left - complete reset will be triggered');
+        
+        this.scheduleCompleteReset();
+        console.log('✅ Host left - complete reset scheduled');
       } else {
         // Remove player and any pending host requests from them
         const updates: any = {
@@ -717,18 +751,13 @@ export class GameService {
           phase: data.gamePhase,
           host: data.host ? 'present' : 'none',
           hostRequests: Object.keys(data.hostRequests || {}).length,
-          requiresRelogin: data.requiresRelogin || false
+          requiresCompleteReset: data.requiresCompleteReset || false
         });
 
         // Check if complete reset is required
-        if (data.requiresRelogin) {
-          console.log('🔄 Complete reset required - triggering database cleanup');
-          // Trigger complete reset after a short delay to allow all clients to see the end screen
-          setTimeout(() => {
-            this.completeGameReset().catch(error => {
-              console.error('Failed to perform complete reset:', error);
-            });
-          }, 5000); // 5 second delay
+        if (data.requiresCompleteReset && !this.resetTimeout) {
+          console.log('🔄 Complete reset required - scheduling reset');
+          this.scheduleCompleteReset();
         }
 
         // Set up timeouts for any pending host requests
