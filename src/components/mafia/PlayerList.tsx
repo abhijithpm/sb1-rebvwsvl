@@ -1,10 +1,10 @@
 import React from 'react';
-import { Player } from './GameContext';
+import { FirebasePlayer } from '../../firebase/gameService';
 import { Crown, Users, User, Wifi } from 'lucide-react';
 
 interface PlayerListProps {
-  players: Player[];
-  host: Player | null;
+  players: FirebasePlayer[];
+  host: string | null;
 }
 
 export function PlayerList({ players, host }: PlayerListProps) {

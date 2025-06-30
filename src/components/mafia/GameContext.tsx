@@ -35,9 +35,11 @@ export function GameProvider({ children }: GameProviderProps) {
   const [isConnected, setIsConnected] = useState(false);
 
   // Derived states
-  const currentPlayer = currentPlayerId ? players.find(p => p.id === currentPlayerId) || null : null;
+  const currentPlayer = currentPlayerId && players.length > 0 
+    ? players.find(p => p.id === currentPlayerId) || null 
+    : null;
   const eliminatedPlayers = players.filter(p => !p.isAlive);
-  const hostRequests: any[] = []; // TODO: Implement host requests from Firebase
+  const hostRequests: any[] = gameState?.hostRequests ? Object.values(gameState.hostRequests) : [];
   const isHost = gameState?.host === currentPlayerId;
 
   useEffect(() => {
