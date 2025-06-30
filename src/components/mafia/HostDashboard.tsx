@@ -2,16 +2,36 @@ import React from 'react';
 import { useGame } from './GameContext';
 import { Timer } from './Timer';
 import { KillSelector } from './KillSelector';
-import { Crown, Users, Skull, Trophy, Wifi } from 'lucide-react';
+import { Crown, Users, Skull, Trophy, Wifi, RotateCcw, Square } from 'lucide-react';
 
 export function HostDashboard() {
-  const { players, eliminatedPlayers, endGame } = useGame();
+  const { players, eliminatedPlayers, endGame, resetGame } = useGame();
 
   const handleEndGame = async (winner: string) => {
     try {
       await endGame(winner);
     } catch (error) {
       console.error('Failed to end game:', error);
+    }
+  };
+
+  const handleStartNewGame = async () => {
+    if (confirm('Are you sure you want to start a new game? This will reset all current progress.')) {
+      try {
+        await resetGame();
+      } catch (error) {
+        console.error('Failed to start new game:', error);
+      }
+    }
+  };
+
+  const handleStopGame = async () => {
+    if (confirm('Are you sure you want to stop the current game? This will end the game without declaring a winner.')) {
+      try {
+        await endGame('Game Stopped');
+      } catch (error) {
+        console.error('Failed to stop game:', error);
+      }
     }
   };
 
@@ -35,6 +55,25 @@ export function HostDashboard() {
             </div>
           </div>
           <p className="text-gray-300">Control the game and manage players • Real-time sync active</p>
+          
+          {/* Game Control Buttons */}
+          <div className="flex justify-center space-x-4 mt-6">
+            <button
+              onClick={handleStopGame}
+              className="flex items-center px-6 py-3 bg-red-600 hover:bg-red-700 rounded-xl font-bold transition-colors shadow-lg"
+            >
+              <Square className="w-5 h-5 mr-2" />
+              Stop Game
+            </button>
+            
+            <button
+              onClick={handleStartNewGame}
+              className="flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-xl font-bold transition-colors shadow-lg"
+            >
+              <RotateCcw className="w-5 h-5 mr-2" />
+              Start New Game
+            </button>
+          </div>
         </div>
 
         {/* Timer */}

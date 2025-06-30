@@ -2,10 +2,21 @@ import React from 'react';
 import { useGame } from './GameContext';
 import { Timer } from './Timer';
 import { RoleCard } from './RoleCard';
-import { Skull, Users, Clock } from 'lucide-react';
+import { Skull, Users, Clock, Square, AlertTriangle } from 'lucide-react';
 
 export function PlayerView() {
-  const { currentPlayer, players, eliminatedPlayers } = useGame();
+  const { currentPlayer, players, eliminatedPlayers, endGame } = useGame();
+
+  const handleStopGame = async () => {
+    if (confirm('Are you sure you want to request to stop the current game? This will end the game for all players.')) {
+      try {
+        await endGame('Game Stopped by Player');
+      } catch (error) {
+        console.error('Failed to stop game:', error);
+        alert('Failed to stop game. Only the host can stop the game.');
+      }
+    }
+  };
 
   if (!currentPlayer) return null;
 
@@ -18,6 +29,21 @@ export function PlayerView() {
             ILLAM MAFIA
           </h1>
           <p className="text-gray-300">Game in Progress</p>
+          
+          {/* Stop Game Button for Players */}
+          <div className="mt-4">
+            <button
+              onClick={handleStopGame}
+              className="flex items-center px-6 py-3 bg-red-600/80 hover:bg-red-700 rounded-xl font-bold transition-colors shadow-lg mx-auto"
+            >
+              <Square className="w-5 h-5 mr-2" />
+              Request Stop Game
+            </button>
+            <div className="mt-2 text-xs text-gray-400">
+              <AlertTriangle className="w-4 h-4 inline mr-1" />
+              This will end the game for all players
+            </div>
+          </div>
         </div>
 
         {/* Timer */}

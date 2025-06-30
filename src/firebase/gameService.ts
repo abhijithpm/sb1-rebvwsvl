@@ -475,16 +475,23 @@ export class GameService {
     }
   }
 
-  // Reset game
+  // Reset game (Start New Game)
   async resetGame(): Promise<void> {
     try {
       // Clear all host request timeouts
       Object.values(this.hostRequestTimeouts).forEach(timeout => clearTimeout(timeout));
       this.hostRequestTimeouts = {};
 
-      const initialState: FirebaseGameState = {
-        host: null,
-        players: {},
+      // Get current game state to preserve host and players
+      const snapshot = await get(ROOM_REF);
+      const currentState = snapshot.val() as FirebaseGameState;
+      
+      if (!currentState) {
+        throw new Error('No current game state found');
+      }
+
+      // Reset game state but keep players and host
+      const resetState: Partial<FirebaseGameState> = {
         gameStarted: false,
         gamePhase: 'lobby',
         timer: 0,
@@ -492,12 +499,24 @@ export class GameService {
         eliminatedPlayers: {},
         winner: null,
         lastUpdated: Date.now(),
-        roomCreated: Date.now(),
         hostRequests: {}
       };
-      await set(ROOM_REF, initialState);
-      this.currentPlayerId = null;
-      console.log('✅ Game reset successfully');
+
+      // Reset all players to alive and remove roles
+      const playerUpdates: any = {};
+      if (currentState.players) {
+        Object.keys(currentState.players).forEach(playerId => {
+          playerUpdates[`players/${playerId}/isAlive`] = true;
+          playerUpdates[`players/${playerId}/role`] = null;
+        });
+      }
+
+      await update(ROOM_REF, {
+        ...resetState,
+        ...playerUpdates
+      });
+
+      console.log('✅ Game reset successfully - players and host preserved');
     } catch (error) {
       console.error('❌ Failed to reset game:', error);
       throw error;

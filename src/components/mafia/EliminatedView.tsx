@@ -1,9 +1,20 @@
 import React from 'react';
 import { useGame } from './GameContext';
-import { Skull, Eye } from 'lucide-react';
+import { Skull, Eye, Square, AlertTriangle } from 'lucide-react';
 
 export function EliminatedView() {
-  const { players, eliminatedPlayers } = useGame();
+  const { players, eliminatedPlayers, endGame } = useGame();
+
+  const handleStopGame = async () => {
+    if (confirm('Are you sure you want to request to stop the current game? This will end the game for all players.')) {
+      try {
+        await endGame('Game Stopped by Eliminated Player');
+      } catch (error) {
+        console.error('Failed to stop game:', error);
+        alert('Failed to stop game. Only the host can stop the game.');
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-red-900 text-white flex items-center justify-center">
@@ -16,6 +27,21 @@ export function EliminatedView() {
           <p className="text-xl text-gray-300 mb-8">
             You have been eliminated from the game, but you can still watch the action unfold.
           </p>
+          
+          {/* Stop Game Button for Eliminated Players */}
+          <div className="mb-8">
+            <button
+              onClick={handleStopGame}
+              className="flex items-center px-6 py-3 bg-red-600/80 hover:bg-red-700 rounded-xl font-bold transition-colors shadow-lg mx-auto"
+            >
+              <Square className="w-5 h-5 mr-2" />
+              Request Stop Game
+            </button>
+            <div className="mt-2 text-xs text-gray-400">
+              <AlertTriangle className="w-4 h-4 inline mr-1" />
+              This will end the game for all players
+            </div>
+          </div>
         </div>
 
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 mb-8">
