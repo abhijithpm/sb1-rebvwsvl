@@ -1,5 +1,5 @@
 import React from 'react';
-import { useGame } from './GameContext';
+import { useGame } from './hooks/useGame';
 import { Timer } from './Timer';
 import { RoleCard } from './RoleCard';
 import { Skull, Users, Clock, Square, AlertTriangle } from 'lucide-react';

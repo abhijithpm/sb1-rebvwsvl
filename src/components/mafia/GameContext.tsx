@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useEffect, useState, ReactNode } from 'react';
 import { gameService, FirebaseGameState, FirebasePlayer } from '../../firebase/gameService';
 
-interface GameContextType {
+export interface GameContextType {
   gameState: FirebaseGameState | null;
   players: FirebasePlayer[];
   currentPlayerId: string | null;
@@ -23,7 +23,7 @@ interface GameContextType {
   respondToHostRequest: (requestId: string, approved: boolean, currentHostId: string) => Promise<void>;
 }
 
-const GameContext = createContext<GameContextType | undefined>(undefined);
+export const GameContext = createContext<GameContextType | undefined>(undefined);
 
 interface GameProviderProps {
   children: ReactNode;
@@ -238,12 +238,4 @@ export function GameProvider({ children }: GameProviderProps) {
       {children}
     </GameContext.Provider>
   );
-}
-
-export function useGame(): GameContextType {
-  const context = useContext(GameContext);
-  if (context === undefined) {
-    throw new Error('useGame must be used within a GameProvider');
-  }
-  return context;
 }

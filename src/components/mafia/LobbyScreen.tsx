@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useGame } from './GameContext';
+import { useGame } from './hooks/useGame';
 import { Users, Crown, Play, ArrowLeft, Wifi, WifiOff, AlertCircle, Triangle as ExclamationTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PlayerList } from './PlayerList';

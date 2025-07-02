@@ -1,5 +1,5 @@
 import React from 'react';
-import { useGame } from './GameContext';
+import { useGame } from './hooks/useGame';
 import { Timer } from './Timer';
 import { KillSelector } from './KillSelector';
 import { Crown, Users, Skull, Trophy, Wifi, RotateCcw, Square } from 'lucide-react';

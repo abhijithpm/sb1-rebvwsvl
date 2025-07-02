@@ -1,5 +1,5 @@
 import React from 'react';
-import { useGame } from './GameContext';
+import { useGame } from './hooks/useGame';
 import { PlayerView } from './PlayerView';
 import { HostDashboard } from './HostDashboard';
 import { EliminatedView } from './EliminatedView';

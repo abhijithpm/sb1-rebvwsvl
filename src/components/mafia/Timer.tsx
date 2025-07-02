@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useGame } from './GameContext';
+import { useGame } from './hooks/useGame';
 import { Clock, Play, Pause, RotateCcw } from 'lucide-react';
 
 export function Timer() {

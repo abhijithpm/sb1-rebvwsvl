@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useGame } from './GameContext';
+import { useGame } from './hooks/useGame';
 import { Skull, AlertTriangle } from 'lucide-react';
 
 export function KillSelector() {

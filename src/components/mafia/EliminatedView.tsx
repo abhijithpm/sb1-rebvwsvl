@@ -1,5 +1,5 @@
 import React from 'react';
-import { useGame } from './GameContext';
+import { useGame } from './hooks/useGame';
 import { Skull, Eye, Square, AlertTriangle } from 'lucide-react';
 
 export function EliminatedView() {

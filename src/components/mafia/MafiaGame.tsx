@@ -1,5 +1,5 @@
 import React from 'react';
-import { useGame } from './GameContext';
+import { useGame } from './hooks/useGame';
 import { LobbyScreen } from './LobbyScreen';
 import { GameScreen } from './GameScreen';
 import { EndGameScreen } from './EndGameScreen';

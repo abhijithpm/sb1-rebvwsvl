@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useGame } from './GameContext';
+import { useGame } from './hooks/useGame';
 import { Crown, Clock, Check, X, AlertCircle, Users } from 'lucide-react';
 
 export function HostRequestPanel() {
