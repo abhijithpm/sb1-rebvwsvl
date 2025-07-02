@@ -513,7 +513,7 @@ export class GameService {
     }
   }
 
-  // Start game and assign roles
+  // Start game and assign roles (FIXED: Exclude host from role assignment)
   async startGame(): Promise<void> {
     try {
       const snapshot = await get(ROOM_REF);
@@ -523,7 +523,15 @@ export class GameService {
         throw new Error('Need at least 3 players to start the game');
       }
 
-      const players = Object.values(gameState.players);
+      // Get all players and separate host from regular players
+      const allPlayers = Object.values(gameState.players);
+      const regularPlayers = allPlayers.filter(player => !player.isHost);
+      const host = allPlayers.find(player => player.isHost);
+
+      if (regularPlayers.length < 3) {
+        throw new Error('Need at least 3 non-host players to start the game');
+      }
+
       const roles = ['Mafia', 'Detective', 'Doctor', 'Villager'];
       const shuffledRoles = [...roles].sort(() => Math.random() - 0.5);
 
@@ -539,13 +547,18 @@ export class GameService {
       Object.values(this.hostRequestTimeouts).forEach(timeout => clearTimeout(timeout));
       this.hostRequestTimeouts = {};
 
-      // Assign roles to players
-      players.forEach((player, index) => {
+      // Assign roles ONLY to regular players (not the host)
+      regularPlayers.forEach((player, index) => {
         updates[`players/${player.id}/role`] = shuffledRoles[index % roles.length];
       });
 
+      // Ensure host doesn't get a role (explicitly set to null if it exists)
+      if (host) {
+        updates[`players/${host.id}/role`] = null;
+      }
+
       await update(ROOM_REF, updates);
-      console.log('✅ Game started with roles assigned');
+      console.log(`✅ Game started with roles assigned to ${regularPlayers.length} players (host excluded)`);
     } catch (error) {
       console.error('❌ Failed to start game:', error);
       
