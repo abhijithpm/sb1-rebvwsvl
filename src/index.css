@@ -1,3 +1,267 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* CSS Reset and Cross-browser compatibility */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  font-size: 16px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  color: #333;
+  background-color: #f5f5f5;
+}
+
+/* Cross-browser button reset */
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Cross-browser input reset */
+input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Cross-browser flexbox fixes */
+.flex {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+
+.flex-col {
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+}
+
+.items-center {
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+}
+
+.justify-center {
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+}
+
+.justify-between {
+  -webkit-box-pack: justify;
+  -ms-flex-pack: justify;
+  justify-content: space-between;
+}
+
+/* Cross-browser transform fixes */
+.transform {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Cross-browser transition fixes */
+.transition-all {
+  -webkit-transition: all 0.3s ease;
+  -moz-transition: all 0.3s ease;
+  -o-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+}
+
+/* Cross-browser backdrop-filter fallback */
+.backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+@supports not (backdrop-filter: blur(4px)) {
+  .backdrop-blur-sm {
+    background-color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* Cross-browser gradient fixes */
+.bg-gradient-to-r {
+  background: -webkit-linear-gradient(left, var(--tw-gradient-stops));
+  background: -moz-linear-gradient(left, var(--tw-gradient-stops));
+  background: -o-linear-gradient(left, var(--tw-gradient-stops));
+  background: linear-gradient(to right, var(--tw-gradient-stops));
+}
+
+.bg-gradient-to-br {
+  background: -webkit-linear-gradient(top left, var(--tw-gradient-stops));
+  background: -moz-linear-gradient(top left, var(--tw-gradient-stops));
+  background: -o-linear-gradient(top left, var(--tw-gradient-stops));
+  background: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}
+
+/* Mobile-first responsive utilities */
+@media (max-width: 320px) {
+  .text-xs-mobile {
+    font-size: 0.7rem;
+  }
+  
+  .p-xs-mobile {
+    padding: 0.5rem;
+  }
+  
+  .gap-xs-mobile {
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container-mobile {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .text-mobile {
+    font-size: 0.875rem;
+  }
+  
+  .button-mobile {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .grid-mobile {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none;
+  }
+  
+  .full-width-mobile {
+    width: 100%;
+  }
+  
+  .text-center-mobile {
+    text-align: center;
+  }
+  
+  .flex-col-mobile {
+    flex-direction: column;
+  }
+  
+  .space-y-mobile > * + * {
+    margin-top: 1rem;
+  }
+}
+
+/* Touch-friendly button sizes */
+@media (max-width: 768px) {
+  button, .btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.75rem 1.5rem;
+  }
+  
+  input, select, textarea {
+    min-height: 44px;
+    padding: 0.75rem;
+  }
+}
+
+/* Landscape phone adjustments */
+@media (max-width: 896px) and (orientation: landscape) {
+  .landscape-adjust {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .tablet-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .tablet-text {
+    font-size: 1rem;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .high-dpi-text {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .dark-mode-auto {
+    background-color: #1a1a1a;
+    color: #ffffff;
+  }
+}
+
+/* Focus styles for accessibility */
+button:focus, input:focus, select:focus, textarea:focus {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+  .safe-area-inset {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
