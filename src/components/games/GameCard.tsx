@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Game } from '../../types';
-import { Play, Clock, Users, MapPin, Info } from 'lucide-react';
+import { Play, Clock, Users, MapPin, Info, Image } from 'lucide-react';
 
 interface GameCardProps {
   game: Game;
@@ -9,14 +9,31 @@ interface GameCardProps {
 
 export function GameCard({ game, onPlay }: GameCardProps) {
   const [showDetails, setShowDetails] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-      <img
-        src={game.imageUrl}
-        alt={game.title}
-        className="w-full h-36 sm:h-48 object-cover"
-      />
+      <div className="w-full h-36 sm:h-48 bg-gray-200 flex items-center justify-center relative overflow-hidden">
+        {!imageError ? (
+          <img
+            src={game.imageUrl}
+            alt={game.title}
+            className="w-full h-full object-cover"
+            onError={handleImageError}
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center text-gray-400 p-4">
+            <Image className="w-8 h-8 sm:w-12 sm:h-12 mb-2" />
+            <span className="text-sm font-medium">{game.title}</span>
+          </div>
+        )}
+      </div>
+      
       <div className="p-3 sm:p-4">
         <div className="flex justify-between items-start mb-3 sm:mb-4">
           <h3 className="text-lg sm:text-xl font-semibold truncate flex-1 mr-2">{game.title}</h3>
