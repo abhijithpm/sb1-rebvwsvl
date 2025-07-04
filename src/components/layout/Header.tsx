@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, Gamepad2, Sparkles } from 'lucide-react';
+import { LogOut, Gamepad2, Sparkles, User } from 'lucide-react';
 import { auth } from '../../utils/auth';
 
 interface HeaderProps {
@@ -25,9 +25,14 @@ export function Header({ onLogout }: HeaderProps) {
           </div>
           
           <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm text-gray-600">Welcome back</p>
-              <p className="font-medium text-gray-900">Demo User</p>
+            <div className="flex items-center space-x-3 hidden sm:flex">
+              <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Welcome back</p>
+                <p className="font-medium text-gray-900">Demo User</p>
+              </div>
             </div>
             <button
               onClick={onLogout}
