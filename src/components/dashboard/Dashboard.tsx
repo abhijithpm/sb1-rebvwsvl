@@ -62,7 +62,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
       ) : (
         <main className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
           {/* Mafia Game Banner */}
-          <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-xl sm:rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8 text-white relative overflow-hidden shadow-2xl">
+          <div className="bg-gradient-to-r from-red-600 to-red-800 rounded-xl sm:rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8 text-white relative overflow-hidden shadow-2xl">
             <div className="absolute inset-0 bg-black/20"></div>
             <div className="absolute top-0 right-0 w-16 h-16 sm:w-32 sm:h-32 bg-red-500/20 rounded-full -translate-y-8 translate-x-8 sm:-translate-y-16 sm:translate-x-16"></div>
             <div className="absolute bottom-0 left-0 w-12 h-12 sm:w-24 sm:h-24 bg-red-400/20 rounded-full translate-y-6 -translate-x-6 sm:translate-y-12 sm:-translate-x-12"></div>
@@ -106,7 +106,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
           </div>
 
           {/* AR Game Center Hero Section */}
-          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-xl sm:rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8 text-white relative overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl sm:rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8 text-white relative overflow-hidden">
             <div className="absolute inset-0 bg-black/10"></div>
             <div className="relative z-10">
               <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
